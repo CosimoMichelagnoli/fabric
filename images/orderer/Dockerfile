@@ -11,10 +11,12 @@ RUN apk add --no-cache tzdata
 # - docker run --rm debian:stretch grep '^hosts:' /etc/nsswitch.conf
 RUN [ ! -e /etc/nsswitch.conf ] && echo 'hosts: files dns' > /etc/nsswitch.conf
 
+# TODO ho aggiunto pkgconfig
 FROM golang:${GO_VER}-alpine${ALPINE_VER} as golang
 RUN apk add --no-cache \
 	gcc \
 	musl-dev \
+	pkgconfig \
 	git \
 	bash \
 	make;

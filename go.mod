@@ -37,6 +37,7 @@ require (
 	github.com/mitchellh/mapstructure v1.2.2
 	github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega v1.10.1
+	github.com/open-quantum-safe/liboqs-go v0.0.0-20221102002817-6bbea70c6217
 	github.com/opencontainers/runc v1.0.0-rc8 // indirect
 	github.com/pierrec/lz4 v2.5.0+incompatible // indirect
 	github.com/pkg/errors v0.9.1

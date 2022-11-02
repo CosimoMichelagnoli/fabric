@@ -279,6 +279,9 @@ github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
+# github.com/open-quantum-safe/liboqs-go v0.0.0-20221102002817-6bbea70c6217
+## explicit
+github.com/open-quantum-safe/liboqs-go/oqs
 # github.com/opencontainers/go-digest v1.0.0
 github.com/opencontainers/go-digest
 # github.com/opencontainers/image-spec v1.0.1

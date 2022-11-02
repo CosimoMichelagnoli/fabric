@@ -21,8 +21,10 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
+	"log"
 
 	"github.com/hyperledger/fabric/bccsp"
+	"github.com/open-quantum-safe/liboqs-go/oqs"
 )
 
 type ecdsaKeyGenerator struct {
@@ -49,4 +51,24 @@ func (kg *aesKeyGenerator) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error) {
 	}
 
 	return &aesPrivateKey{lowLevelKey, false}, nil
+}
+
+type oqsKeyGenerator struct{}
+
+func (kg *oqsKeyGenerator) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error) {
+
+	signer := oqs.Signature{}
+	defer signer.Clean() // clean up even in case of panic
+
+	if err := signer.Init(opts.Algorithm(), nil); err != nil {
+		log.Fatal(err)
+	}
+
+	logger.Infof("Generating a quantum-safe key with algorithm [%s]", signer.String())
+	pubKey, err := signer.GenerateKeyPair()
+
+	if err != nil {
+		return nil, err
+	}
+	return &oqsPrivateKey{&signer, pubKey}, nil
 }
