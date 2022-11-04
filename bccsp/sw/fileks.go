@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	"github.com/hyperledger/fabric/bccsp"
+	"github.com/open-quantum-safe/liboqs-go/oqs"
 )
 
 // NewFileBasedKeyStore instantiated a file-based key store at a given position.
@@ -155,6 +156,8 @@ func (ks *fileBasedKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
 		switch k := key.(type) {
 		case *ecdsa.PublicKey:
 			return &ecdsaPublicKey{k}, nil
+		case *oqs.PublicKey:
+			return &oqsPublicKey{key.(*oqs.PublicKey)}, nil
 		default:
 			return nil, errors.New("public key type not recognized")
 		}
@@ -190,6 +193,17 @@ func (ks *fileBasedKeyStore) StoreKey(k bccsp.Key) (err error) {
 		err = ks.storeKey(hex.EncodeToString(k.SKI()), kk.privKey)
 		if err != nil {
 			return fmt.Errorf("failed storing AES key [%s]", err)
+		}
+
+	case *oqsPublicKey:
+		err = ks.storePublicKey(hex.EncodeToString(k.SKI()), kk.pubKey)
+		if err != nil {
+			return fmt.Errorf("Failed storing OQS public key [%s]", err)
+		}
+	case *oqsPrivateKey:
+		err = ks.storePrivateKey(hex.EncodeToString(k.SKI()), kk.sig.ExportSecretKey())
+		if err != nil {
+			return fmt.Errorf("Failed storing OQS key [%s]", err)
 		}
 
 	default:

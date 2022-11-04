@@ -264,3 +264,20 @@ func (opts *X509PublicKeyImportOpts) Algorithm() string {
 func (opts *X509PublicKeyImportOpts) Ephemeral() bool {
 	return opts.Temporary
 }
+
+// OQSKeyGenOpts contains options for OQS key generation
+type OQSKeyGenOpts struct {
+	Temporary       bool
+	SignatureScheme string
+}
+
+// Algorithm returns the key generation algorithm identifier.
+func (opts *OQSKeyGenOpts) Algorithm() string {
+	return opts.SignatureScheme
+}
+
+// Ephemeral returns true if the key to generate has to be ephemeral,
+// false otherwise.
+func (opts *OQSKeyGenOpts) Ephemeral() bool {
+	return opts.Temporary
+}

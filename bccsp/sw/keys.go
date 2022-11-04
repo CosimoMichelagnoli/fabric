@@ -15,6 +15,8 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+
+	"github.com/open-quantum-safe/liboqs-go/oqs"
 )
 
 type pkcs8Info struct {
@@ -148,6 +150,20 @@ func privateKeyToEncryptedPEM(privateKey interface{}, pwd []byte) ([]byte, error
 		}
 
 		return pem.EncodeToMemory(block), nil
+	case *oqs.SecretKey:
+		if k == nil {
+			return nil, errors.New("Invalid oqs private key. It must be different from nil.")
+		}
+		raw, err := oqs.MarshalPKIXPrivateKey(k)
+		if err != nil {
+			return nil, err
+		}
+		return pem.EncodeToMemory(
+			&pem.Block{
+				Type:  "OQS PRIVATE KEY",
+				Bytes: raw,
+			},
+		), nil
 
 	default:
 		return nil, errors.New("invalid key type. It must be *ecdsa.PrivateKey")
