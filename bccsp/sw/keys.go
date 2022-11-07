@@ -16,7 +16,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/open-quantum-safe/liboqs-go/oqs"
+	"github.com/hyperledger/fabric/vendor/github.com/open-quantum-safe/liboqs-go/oqs"
 )
 
 type pkcs8Info struct {
@@ -150,11 +150,26 @@ func privateKeyToEncryptedPEM(privateKey interface{}, pwd []byte) ([]byte, error
 		}
 
 		return pem.EncodeToMemory(block), nil
-	case *oqs.SecretKey:
+	/*case *oqs.SecretKey:
+	if k == nil {
+		return nil, errors.New("Invalid oqs private key. It must be different from nil.")
+	}
+	raw, err := oqs.MarshalPKIXPrivateKey(k)
+	if err != nil {
+		return nil, err
+	}
+	return pem.EncodeToMemory(
+		&pem.Block{
+			Type:  "OQS PRIVATE KEY",
+			Bytes: raw,
+		},
+	), nil
+	*/
+	case *oqs.Signature:
 		if k == nil {
 			return nil, errors.New("Invalid oqs private key. It must be different from nil.")
 		}
-		raw, err := oqs.MarshalPKIXPrivateKey(k)
+		raw, err := MarshalPKIXPrivateKey(k)
 		if err != nil {
 			return nil, err
 		}

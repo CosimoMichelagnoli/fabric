@@ -22,7 +22,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/internal/cryptogen/csp"
+	"github.com/open-quantum-safe/liboqs-go/oqs"
 	"github.com/pkg/errors"
 )
 
@@ -50,6 +52,7 @@ func NewCA(
 	orgUnit,
 	streetAddress,
 	postalCode string,
+	genOQSAlg *string,
 ) (*CA, error) {
 
 	var ca *CA
@@ -82,6 +85,26 @@ func NewCA(
 
 	template.Subject = subject
 	template.SubjectKeyId = computeSKI(priv)
+
+	var qSigner crypto.Signer
+	var qPriv bccsp.Key
+	if genOQSAlg != nil && *genOQSAlg != "" {
+		// Get a public and private post-quantum key
+		qPriv, qSigner, err = csp.GeneratePrivateKey(baseDir, &bccsp.OQSKeyGenOpts{Temporary: false, SignatureScheme: *genOQSAlg})
+		if err != nil {
+			return nil, err
+		}
+		qPub, err := csp.GetQSPublicKey(qPriv)
+		if err != nil {
+			return nil, err
+		}
+		// Root certificate will sign its own public key material for post-quantum x509 extensions
+		exts, err := oqs.BuildAltPublicKeyExtensions(qPub, ecPubKey, qSigner)
+		if err != nil {
+			return nil, err
+		}
+		template.ExtraExtensions = append(template.ExtraExtensions, exts...)
+	}
 
 	x509Cert, err := genCertificateECDSA(
 		baseDir,
@@ -126,6 +149,18 @@ func (ca *CA) SignCertificate(
 	template := x509Template()
 	template.KeyUsage = ku
 	template.ExtKeyUsage = eku
+
+	// Also create alt public key extensions if the ca has a post-quantum signer
+	// See http://test-pqpki.com/ for more details.
+	// This does not affect the certificate's primary signature, which is still purely classical.
+	if ca.QSigner != nil {
+		exts, err := oqs.BuildAltPublicKeyExtensions(qPub, pub, ca.QSigner)
+		if err != nil {
+			return nil, err
+		}
+		template.ExtraExtensions = append(template.ExtraExtensions, exts...)
+
+	}
 
 	//set the organization for the subject
 	subject := subjectTemplateAdditional(

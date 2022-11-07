@@ -9,6 +9,45 @@ import (
 )
 
 // oqsPrivateKey implements a bccsp.Key interface
+type oqsSignatureKey struct {
+	sig    *oqs.Signature
+	pubKey []byte
+}
+
+// Bytes converts this key to its byte representation,
+// if this operation is allowed.
+func (k *oqsSignatureKey) Bytes() ([]byte, error) {
+	return nil, errors.New("Not supported.")
+}
+
+func (k *oqsSignatureKey) Symmetric() bool {
+	return false
+}
+
+func (k *oqsSignatureKey) Private() bool {
+	return true
+}
+
+func (k *oqsSignatureKey) PublicKey() (bccsp.Key, error) {
+	return nil, nil
+}
+
+// oqs
+
+func (k *oqsSignatureKey) SKI() []byte {
+	if k.sig == nil {
+		return nil
+	}
+	algBytes := []byte(k.sig.Details().Name)
+
+	// Hash public key with algorithm
+	hash := sha256.New()
+	hash.Write(append(k.pubKey, algBytes...))
+	return hash.Sum(nil)
+}
+
+/*
+// oqsPrivateKey implements a bccsp.Key interface
 type oqsPrivateKey struct {
 	sig       *oqs.Signature
 	publicKey []byte
@@ -78,3 +117,4 @@ func (k *oqsPublicKey) Private() bool {
 func (k *oqsPublicKey) PublicKey() (bccsp.Key, error) {
 	return k, nil
 }
+*/

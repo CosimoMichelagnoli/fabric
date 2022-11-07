@@ -143,6 +143,8 @@ func (ks *fileBasedKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
 		switch k := key.(type) {
 		case *ecdsa.PrivateKey:
 			return &ecdsaPrivateKey{k}, nil
+		case *oqs.Signature:
+			return &oqsSignatureKey{key.(*oqs.Signature), ski}, nil //TODO: check if ski == public key
 		default:
 			return nil, errors.New("secret key type not recognized")
 		}
@@ -156,8 +158,8 @@ func (ks *fileBasedKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
 		switch k := key.(type) {
 		case *ecdsa.PublicKey:
 			return &ecdsaPublicKey{k}, nil
-		case *oqs.PublicKey:
-			return &oqsPublicKey{key.(*oqs.PublicKey)}, nil
+		case *oqs.Signature:
+			return &oqsSignatureKey{key.(*oqs.Signature), ski}, nil //TODO: check if ski == public key
 		default:
 			return nil, errors.New("public key type not recognized")
 		}
@@ -194,8 +196,13 @@ func (ks *fileBasedKeyStore) StoreKey(k bccsp.Key) (err error) {
 		if err != nil {
 			return fmt.Errorf("failed storing AES key [%s]", err)
 		}
+	case *oqsSignatureKey:
+		err = ks.storePublicKey(hex.EncodeToString(k.SKI()), kk.pubKey)
+		if err != nil {
+			return fmt.Errorf("Failed storing OQS public key [%s]", err)
+		}
 
-	case *oqsPublicKey:
+	/*case *oqsPublicKey:
 		err = ks.storePublicKey(hex.EncodeToString(k.SKI()), kk.pubKey)
 		if err != nil {
 			return fmt.Errorf("Failed storing OQS public key [%s]", err)
@@ -204,7 +211,7 @@ func (ks *fileBasedKeyStore) StoreKey(k bccsp.Key) (err error) {
 		err = ks.storePrivateKey(hex.EncodeToString(k.SKI()), kk.sig.ExportSecretKey())
 		if err != nil {
 			return fmt.Errorf("Failed storing OQS key [%s]", err)
-		}
+		}*/
 
 	default:
 		return fmt.Errorf("key type not reconigned [%s]", k)

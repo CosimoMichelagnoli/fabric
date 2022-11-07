@@ -70,5 +70,5 @@ func (kg *oqsKeyGenerator) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &oqsPrivateKey{&signer, pubKey}, nil
+	return &oqsSignatureKey{&signer, pubKey}, nil
 }

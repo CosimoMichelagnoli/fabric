@@ -60,13 +60,15 @@ func NewWithParams(securityLevel int, hashFamily string, keyStore bccsp.KeyStore
 
 	// Set the Signers
 	swbccsp.AddWrapper(reflect.TypeOf(&ecdsaPrivateKey{}), &ecdsaSigner{})
-	swbccsp.AddWrapper(reflect.TypeOf(&oqsPrivateKey{}), &oqsSigner{})
+	//swbccsp.AddWrapper(reflect.TypeOf(&oqsPrivateKey{}), &oqsSigner{})
+	swbccsp.AddWrapper(reflect.TypeOf(&oqsSignatureKey{}), &oqsSigner{})
 
 	// Set the Verifiers
 	swbccsp.AddWrapper(reflect.TypeOf(&ecdsaPrivateKey{}), &ecdsaPrivateKeyVerifier{})
 	swbccsp.AddWrapper(reflect.TypeOf(&ecdsaPublicKey{}), &ecdsaPublicKeyKeyVerifier{})
-	swbccsp.AddWrapper(reflect.TypeOf(&oqsPublicKey{}), &oqsPublicKeyKeyVerifier{})
-	swbccsp.AddWrapper(reflect.TypeOf(&oqsPrivateKey{}), &oqsPrivateKeyVerifier{})
+	//swbccsp.AddWrapper(reflect.TypeOf(&oqsPublicKey{}), &oqsPublicKeyKeyVerifier{})
+	//swbccsp.AddWrapper(reflect.TypeOf(&oqsPrivateKey{}), &oqsPrivateKeyVerifier{})
+	swbccsp.AddWrapper(reflect.TypeOf(&oqsSignatureKey{}), &oqsVerifier{})
 
 	// Set the Hashers
 	swbccsp.AddWrapper(reflect.TypeOf(&bccsp.SHAOpts{}), &hasher{hash: conf.hashFunction})
