@@ -117,6 +117,21 @@ func privateKeyToPEM(privateKey interface{}, pwd []byte) ([]byte, error) {
 			},
 		), nil
 
+	case oqsSignatureKey:
+		if k.sig == nil {
+			return nil, errors.New("invalid oqs private key. It must be different from nil")
+		}
+		raw, err := MarshalPKIXPrivateKey(k)
+		if err != nil {
+			return nil, err
+		}
+		return pem.EncodeToMemory(
+			&pem.Block{
+				Type:  "OQS PRIVATE KEY",
+				Bytes: raw,
+			},
+		), nil
+
 	default:
 		return nil, errors.New("invalid key type. It must be *ecdsa.PrivateKey")
 	}
@@ -201,6 +216,10 @@ func derToPrivateKey(der []byte) (key interface{}, err error) {
 	}
 
 	if key, err = x509.ParseECPrivateKey(der); err == nil {
+		return
+	}
+
+	if key, err = ParsePKIXPrivateKey(der); err == nil {
 		return
 	}
 
@@ -289,6 +308,62 @@ func aesToEncryptedPEM(raw []byte, pwd []byte) ([]byte, error) {
 	return pem.EncodeToMemory(block), nil
 }
 
+// TODO: check if can be merged with aes
+func pemToOQS(raw []byte, pwd []byte) ([]byte, error) {
+	if len(raw) == 0 {
+		return nil, errors.New("invalid PEM. It must be different from nil")
+	}
+	block, _ := pem.Decode(raw)
+	if block == nil {
+		return nil, fmt.Errorf("failed decoding PEM. Block must be different from nil [% x]", raw)
+	}
+
+	/*
+		if x509.IsEncryptedPEMBlock(block) {
+			if len(pwd) == 0 {
+				return nil, errors.New("encrypted Key. Password must be different fom nil")
+			}
+
+			decrypted, err := x509.DecryptPEMBlock(block, pwd)
+			if err != nil {
+				return nil, fmt.Errorf("failed PEM decryption: [%s]", err)
+			}
+			return decrypted, nil
+		}
+	*/
+
+	return block.Bytes, nil
+}
+
+func oqsToPEM(raw []byte) []byte {
+	return pem.EncodeToMemory(&pem.Block{Type: "OQS PUBLIC KEY", Bytes: raw})
+}
+
+func oqsToEncryptedPEM(raw []byte, pwd []byte) ([]byte, error) {
+	if len(raw) == 0 {
+		return nil, errors.New("invalid oqs key. It must be different from nil")
+	}
+	if len(pwd) == 0 {
+		return oqsToPEM(raw), nil
+	}
+	/*
+		//TODO: oqsEncryptPemBlock
+		block, err := x509.oqsEncryptPEMBlock(
+			rand.Reader,
+			"OQS PUBLIC KEY",
+			raw,
+			pwd,
+			x509.PEMCipherAES256)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return pem.EncodeToMemory(block), nil
+	*/
+	return nil, errors.New("invalid not implemented ks with pwd")
+}
+
 func publicKeyToPEM(publicKey interface{}, pwd []byte) ([]byte, error) {
 	if len(pwd) != 0 {
 		return publicKeyToEncryptedPEM(publicKey, pwd)
@@ -311,6 +386,21 @@ func publicKeyToPEM(publicKey interface{}, pwd []byte) ([]byte, error) {
 		return pem.EncodeToMemory(
 			&pem.Block{
 				Type:  "PUBLIC KEY",
+				Bytes: PubASN1,
+			},
+		), nil
+
+	case oqsSignatureKey:
+		if k.pubKey == nil {
+			return nil, errors.New("invalid oqs private key. It must be different from nil")
+		}
+		PubASN1, err := MarshalPKIXPublicKey(k)
+		if err != nil {
+			return nil, err
+		}
+		return pem.EncodeToMemory(
+			&pem.Block{
+				Type:  "OQS PUBLIC KEY",
 				Bytes: PubASN1,
 			},
 		), nil
@@ -385,6 +475,11 @@ func pemToPublicKey(raw []byte, pwd []byte) (interface{}, error) {
 func derToPublicKey(raw []byte) (pub interface{}, err error) {
 	if len(raw) == 0 {
 		return nil, errors.New("invalid DER. It must be different from nil")
+	}
+
+	// Try parsing as an OQS key first
+	if key, err := ParsePKIXPublicKey(raw); err == nil {
+		return key, err
 	}
 
 	key, err := x509.ParsePKIXPublicKey(raw)

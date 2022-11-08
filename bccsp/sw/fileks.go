@@ -20,7 +20,6 @@ import (
 	"sync"
 
 	"github.com/hyperledger/fabric/bccsp"
-	"github.com/open-quantum-safe/liboqs-go/oqs"
 )
 
 // NewFileBasedKeyStore instantiated a file-based key store at a given position.
@@ -143,8 +142,9 @@ func (ks *fileBasedKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
 		switch k := key.(type) {
 		case *ecdsa.PrivateKey:
 			return &ecdsaPrivateKey{k}, nil
-		case *oqs.Signature:
-			return &oqsSignatureKey{key.(*oqs.Signature), ski}, nil //TODO: check if ski == public key
+
+		case oqsSignatureKey:
+			return &oqsPrivateKey{k}, nil
 		default:
 			return nil, errors.New("secret key type not recognized")
 		}
@@ -158,13 +158,15 @@ func (ks *fileBasedKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
 		switch k := key.(type) {
 		case *ecdsa.PublicKey:
 			return &ecdsaPublicKey{k}, nil
-		case *oqs.Signature:
-			return &oqsSignatureKey{key.(*oqs.Signature), ski}, nil //TODO: check if ski == public key
+		case oqsSignatureKey:
+			return &oqsPublicKey{k}, nil
 		default:
 			return nil, errors.New("public key type not recognized")
 		}
+
 	default:
 		return ks.searchKeystoreForSKI(ski)
+
 	}
 }
 
@@ -196,22 +198,26 @@ func (ks *fileBasedKeyStore) StoreKey(k bccsp.Key) (err error) {
 		if err != nil {
 			return fmt.Errorf("failed storing AES key [%s]", err)
 		}
-	case *oqsSignatureKey:
-		err = ks.storePublicKey(hex.EncodeToString(k.SKI()), kk.pubKey)
+
+	case *oqsPublicKey:
+		err = ks.storePublicKey(hex.EncodeToString(k.SKI()), kk.oqsSignatureKey)
 		if err != nil {
 			return fmt.Errorf("Failed storing OQS public key [%s]", err)
 		}
 
-	/*case *oqsPublicKey:
-		err = ks.storePublicKey(hex.EncodeToString(k.SKI()), kk.pubKey)
-		if err != nil {
-			return fmt.Errorf("Failed storing OQS public key [%s]", err)
-		}
 	case *oqsPrivateKey:
-		err = ks.storePrivateKey(hex.EncodeToString(k.SKI()), kk.sig.ExportSecretKey())
+		err = ks.storePrivateKey(hex.EncodeToString(k.SKI()), kk.oqsSignatureKey)
 		if err != nil {
 			return fmt.Errorf("Failed storing OQS key [%s]", err)
-		}*/
+		}
+
+		/*
+			case *oqsSignatureKey:
+				err = ks.storeOqsKey(hex.EncodeToString(k.SKI()), kk.pubKey)
+				if err != nil {
+					return fmt.Errorf("Failed storing OQS public key [%s]", err)
+				}
+		*/
 
 	default:
 		return fmt.Errorf("key type not reconigned [%s]", k)
@@ -317,6 +323,23 @@ func (ks *fileBasedKeyStore) storeKey(alias string, key []byte) error {
 	}
 
 	err = ioutil.WriteFile(ks.getPathForAlias(alias, "key"), pem, 0600)
+	if err != nil {
+		logger.Errorf("Failed storing key [%s]: [%s]", alias, err)
+		return err
+	}
+
+	return nil
+}
+
+//oqs pem with public key
+func (ks *fileBasedKeyStore) storeOqsKey(alias string, key []byte) error {
+	pem, err := oqsToEncryptedPEM(key, ks.pwd)
+	if err != nil {
+		logger.Errorf("Failed converting key to PEM [%s]: [%s]", alias, err)
+		return err
+	}
+
+	err = ioutil.WriteFile(ks.getPathForAlias(alias, "oqs"), pem, 0600)
 	if err != nil {
 		logger.Errorf("Failed storing key [%s]: [%s]", alias, err)
 		return err

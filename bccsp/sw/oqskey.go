@@ -14,6 +14,7 @@ type oqsSignatureKey struct {
 	pubKey []byte
 }
 
+/*
 // Bytes converts this key to its byte representation,
 // if this operation is allowed.
 func (k *oqsSignatureKey) Bytes() ([]byte, error) {
@@ -45,12 +46,11 @@ func (k *oqsSignatureKey) SKI() []byte {
 	hash.Write(append(k.pubKey, algBytes...))
 	return hash.Sum(nil)
 }
+*/
 
-/*
 // oqsPrivateKey implements a bccsp.Key interface
 type oqsPrivateKey struct {
-	sig       *oqs.Signature
-	publicKey []byte
+	oqsSignatureKey
 }
 
 // Bytes converts this key to its byte representation,
@@ -61,14 +61,14 @@ func (k *oqsPrivateKey) Bytes() ([]byte, error) {
 
 // SKI returns the subject key identifier of this key.
 func (k *oqsPrivateKey) SKI() []byte {
-	if k.sig.ExportSecretKey() == nil {
+	if k.sig == nil {
 		return nil
 	}
 	algBytes := []byte(k.sig.Details().Name)
 
 	// Hash public key with algorithm
 	hash := sha256.New()
-	hash.Write(append(k.publicKey, algBytes...))
+	hash.Write(append(k.oqsSignatureKey.sig.ExportSecretKey(), algBytes...))
 	return hash.Sum(nil)
 }
 
@@ -81,28 +81,28 @@ func (k *oqsPrivateKey) Private() bool {
 }
 
 func (k *oqsPrivateKey) PublicKey() (bccsp.Key, error) {
-	return &oqsPublicKey{k.publicKey}, nil
+	return &oqsPublicKey{k.oqsSignatureKey}, nil
 }
 
 // oqsPublicKey implements a bccsp.Key interface
 type oqsPublicKey struct {
-	pubKey []byte
+	oqsSignatureKey
 }
 
 func (k *oqsPublicKey) Bytes() ([]byte, error) {
-	return k.pubKey, nil
+	return k.oqsSignatureKey.pubKey, nil
 }
 
 // SKI returns the subject key identifier of this key.
 func (k *oqsPublicKey) SKI() []byte {
-	if k.pubKey == nil {
+	if k.oqsSignatureKey.sig == nil {
 		return nil
 	}
 	algBytes := []byte(k.pubKey)
 
 	// Hash public key with algorithm
 	hash := sha256.New()
-	hash.Write(append(k.pubKey, algBytes...))
+	hash.Write(append(k.oqsSignatureKey.pubKey, algBytes...))
 	return hash.Sum(nil)
 } //TODO not used
 
@@ -117,4 +117,3 @@ func (k *oqsPublicKey) Private() bool {
 func (k *oqsPublicKey) PublicKey() (bccsp.Key, error) {
 	return k, nil
 }
-*/
