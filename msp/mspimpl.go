@@ -184,25 +184,30 @@ func (msp *bccspmsp) getCertFromPem(idBytes []byte) (*x509.Certificate, error) {
 	return cert, nil
 }
 
-func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, bccsp.Key, error) {
+func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, bccsp.Key, bccsp.Key, error) {
 	// get a cert
 	cert, err := msp.getCertFromPem(idBytes)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// get the public key in the right format
 	certPubK, err := msp.bccsp.KeyImport(cert, &bccsp.X509PublicKeyImportOpts{Temporary: true})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
+	//get an alternative public PQkey
+	certPQPubK, err := msp.bccsp.KeyImport(cert, &bccsp.X509AltPublicKeyImportOpts{Temporary: true})
+	if certPQPubK != nil {
+		mspLogger.Debug("Successfully imported quantum-safe public key from certificate")
+	}
 	mspId, err := newIdentity(cert, certPubK, msp)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	return mspId, certPubK, nil
+	return mspId, certPubK, certPQPubK, nil
 }
 
 func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) (SigningIdentity, error) {
