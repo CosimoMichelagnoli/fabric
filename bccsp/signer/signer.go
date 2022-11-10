@@ -17,14 +17,15 @@ import (
 
 // bccspCryptoSigner is the BCCSP-based implementation of a crypto.Signer
 type bccspCryptoSigner struct {
-	csp bccsp.BCCSP
-	key bccsp.Key
-	pk  interface{}
+	csp        bccsp.BCCSP
+	key, pqKey bccsp.Key
+	pk         interface{}
+	pqPk       interface{}
 }
 
 // New returns a new BCCSP-based crypto.Signer
 // for the given BCCSP instance and key.
-func New(csp bccsp.BCCSP, key bccsp.Key) (crypto.Signer, error) {
+func New(csp bccsp.BCCSP, key, pqKey bccsp.Key) (crypto.Signer, error) {
 	// Validate arguments
 	if csp == nil {
 		return nil, errors.New("bccsp instance must be different from nil.")
@@ -52,7 +53,30 @@ func New(csp bccsp.BCCSP, key bccsp.Key) (crypto.Signer, error) {
 		return nil, errors.Wrap(err, "failed marshalling der to public key")
 	}
 
-	return &bccspCryptoSigner{csp, key, pk}, nil
+	if pqKey != nil {
+		// Marshall the bccsp public PQkey as a crypto.PublicKey
+		quantumPub, err := pqKey.PublicKey()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed getting quantum public key")
+		}
+		quantumRaw, err := quantumPub.Bytes()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed marshalling public key")
+		}
+		pqPk, err := x509.ParsePKIXPublicKey(quantumRaw)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed marshalling der to public key")
+		}
+		return &bccspCryptoSigner{
+			csp,
+			key,
+			pqKey,
+			pk,
+			pqPk,
+		}, nil
+	}
+
+	return &bccspCryptoSigner{csp: csp, key: key, pqKey: nil, pk: pk, pqPk: nil}, nil
 }
 
 // Public returns the public key corresponding to the opaque,

@@ -199,10 +199,11 @@ func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, bccsp.Key, b
 
 	//get an alternative public PQkey
 	certPQPubK, err := msp.bccsp.KeyImport(cert, &bccsp.X509AltPublicKeyImportOpts{Temporary: true})
+	//TODO: check for err
 	if certPQPubK != nil {
 		mspLogger.Debug("Successfully imported quantum-safe public key from certificate")
 	}
-	mspId, err := newIdentity(cert, certPubK, msp)
+	mspId, err := newIdentity(cert, certPubK, certPQPubK, msp)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -216,7 +217,7 @@ func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) 
 	}
 
 	// Extract the public part of the identity
-	idPub, pubKey, err := msp.getIdentityFromConf(sidInfo.PublicSigner)
+	idPub, pubKey, pqPubKey, err := msp.getIdentityFromConf(sidInfo.PublicSigner)
 	if err != nil {
 		return nil, err
 	}
@@ -240,13 +241,24 @@ func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) 
 		}
 	}
 
+	var pqPrivKey bccsp.Key = nil
+	if pqPubKey != nil {
+		// Find the matching private PQKey in the BCCSP keystore
+		pqPrivKey, err = msp.bccsp.GetKey(pqPubKey.SKI())
+		if err != nil {
+			mspLogger.Debugf("Could not find SKI [%s], trying PQKeyMaterial field: %+v\n", hex.EncodeToString(pqPubKey.SKI()), err)
+			return nil, errors.New("PQKeyMaterial not found in SigningIdentityInfo")
+		}
+		mspLogger.Debug("Successfully extracted quantum-safe private key")
+	}
+
 	// get the peer signer
-	peerSigner, err := signer.New(msp.bccsp, privKey)
+	peerSigner, err := signer.New(msp.bccsp, privKey, pqPrivKey)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getIdentityFromBytes error: Failed initializing bccspCryptoSigner")
 	}
 
-	return newSigningIdentity(idPub.(*identity).cert, idPub.(*identity).pk, peerSigner, msp)
+	return newSigningIdentity(idPub.(*identity).cert, idPub.(*identity).pk, idPub.(*identity).pqPk, peerSigner, msp)
 }
 
 // Setup sets up the internal data structures
@@ -422,7 +434,13 @@ func (msp *bccspmsp) deserializeIdentityInternal(serializedIdentity []byte) (Ide
 		return nil, errors.WithMessage(err, "failed to import certificate's public key")
 	}
 
-	return newIdentity(cert, pub, msp)
+	pqPub, err := msp.bccsp.KeyImport(cert, &bccsp.X509AltPublicKeyImportOpts{Temporary: true})
+	//TODO: check for err
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to import certificate's public pqkey")
+	}
+
+	return newIdentity(cert, pub, pqPub, msp)
 }
 
 // SatisfiesPrincipal returns nil if the identity matches the principal or an error otherwise

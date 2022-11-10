@@ -27,25 +27,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO
 func TestInitFailures(t *testing.T) {
-	_, err := New(nil, &mocks.MockKey{})
+	_, err := New(nil, &mocks.MockKey{}, nil)
 	require.Error(t, err)
 
-	_, err = New(&mocks.MockBCCSP{}, nil)
+	_, err = New(&mocks.MockBCCSP{}, nil, nil)
 	require.Error(t, err)
 
-	_, err = New(&mocks.MockBCCSP{}, &mocks.MockKey{Symm: true})
+	_, err = New(nil, nil, &mocks.MockKey{})
 	require.Error(t, err)
 
-	_, err = New(&mocks.MockBCCSP{}, &mocks.MockKey{PKErr: errors.New("No PK")})
+	_, err = New(&mocks.MockBCCSP{}, &mocks.MockKey{Symm: true}, nil)
+	require.Error(t, err)
+
+	_, err = New(&mocks.MockBCCSP{}, &mocks.MockKey{PKErr: errors.New("No PK")}, nil)
 	require.Error(t, err)
 	require.Equal(t, "failed getting public key: No PK", err.Error())
 
-	_, err = New(&mocks.MockBCCSP{}, &mocks.MockKey{PK: &mocks.MockKey{BytesErr: errors.New("No bytes")}})
+	_, err = New(&mocks.MockBCCSP{}, &mocks.MockKey{PK: &mocks.MockKey{BytesErr: errors.New("No bytes")}}, nil)
 	require.Error(t, err)
 	require.Equal(t, "failed marshalling public key: No bytes", err.Error())
 
-	_, err = New(&mocks.MockBCCSP{}, &mocks.MockKey{PK: &mocks.MockKey{BytesValue: []byte{0, 1, 2, 3}}})
+	_, err = New(&mocks.MockBCCSP{}, &mocks.MockKey{PK: &mocks.MockKey{BytesValue: []byte{0, 1, 2, 3}}}, nil)
 	require.Error(t, err)
 }
 
@@ -55,7 +59,7 @@ func TestInit(t *testing.T) {
 	pkRaw, err := x509.MarshalPKIXPublicKey(&k.PublicKey)
 	require.NoError(t, err)
 
-	signer, err := New(&mocks.MockBCCSP{}, &mocks.MockKey{PK: &mocks.MockKey{BytesValue: pkRaw}})
+	signer, err := New(&mocks.MockBCCSP{}, &mocks.MockKey{PK: &mocks.MockKey{BytesValue: pkRaw}}, nil)
 	require.NoError(t, err)
 	require.NotNil(t, signer)
 

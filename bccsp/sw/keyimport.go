@@ -10,11 +10,16 @@ import (
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/asn1"
 	"errors"
 	"fmt"
 	"reflect"
 
 	"github.com/hyperledger/fabric/bccsp"
+)
+
+var (
+	oidAltPublicKeyInfo = asn1.ObjectIdentifier{2, 5, 29, 71}
 )
 
 type aes256ImportKeyOptsKeyImporter struct{}
@@ -137,3 +142,66 @@ func (ki *x509PublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bc
 		return nil, errors.New("Certificate's public key type not recognized. Supported keys: [ECDSA, RSA]")
 	}
 }
+
+type x509AltPublicKeyImportOptsKeyImporter struct {
+	bccsp *CSP
+}
+
+func (ki *x509AltPublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (bccsp.Key, error) {
+	x509Cert, ok := raw.(*x509.Certificate)
+	if !ok {
+		return nil, errors.New("Invalid raw material. Expected *x509.Certificate.")
+	}
+
+	//TODO: check if it's better Extensions or Extraextension. CheckId to be defined
+	for _, ext := range x509Cert.ExtraExtensions {
+		if reflect.DeepEqual(ext.Id, oidAltPublicKeyInfo) {
+			qpPub := ext.Value
+			return ki.bccsp.KeyImporters[reflect.TypeOf(&bccsp.OQSGoPublicKeyImportOpts{})].KeyImport(
+				qpPub,
+				&bccsp.OQSGoPublicKeyImportOpts{Temporary: opts.Ephemeral()})
+		}
+	}
+
+	opts.(*bccsp.X509AltPublicKeyImportOpts).Temporary = true
+	return nil, nil
+
+}
+
+/*
+type oqsGoPublicKeyImportOptsKeyImporter struct{}
+
+func (*oqsGoPublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (bccsp.Key, error) {
+	lowLevelKey, ok := raw.(*oqs.PublicKey)
+	if !ok {
+		return nil, errors.New("Invalid raw material. Expected *oqs.PublicKey.")
+	}
+
+	return &oqsPublicKey{lowLevelKey}, nil
+}
+
+type oqsPKIXPublicKeyImportOptsKeyImporter struct{}
+
+func (*oqsPKIXPublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (bccsp.Key, error) {
+	der, ok := raw.([]byte)
+	if !ok {
+		return nil, errors.New("Invalid raw material. Expected byte array.")
+	}
+
+	if len(der) == 0 {
+		return nil, errors.New("Invalid raw. It must not be nil.")
+	}
+
+	lowLevelKey, err := oqs.ParsePKIXPublicKey(der)
+	if err != nil {
+		return nil, fmt.Errorf("Failed converting PKIX to OQS public key [%s]", err)
+	}
+
+	oqsPK, ok := lowLevelKey.(*oqs.PublicKey)
+	if !ok {
+		return nil, errors.New("Failed casting to OQS public key. Invalid raw material.")
+	}
+
+	return &oqsPublicKey{oqsPK}, nil
+}
+*/
