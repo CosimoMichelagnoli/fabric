@@ -34,7 +34,7 @@ type identity struct {
 	cert *x509.Certificate
 
 	// this is the public key of this instance
-	pk bccsp.Key
+	pk, pqPk bccsp.Key
 
 	// reference to the MSP that "owns" this identity
 	msp *bccspmsp
@@ -52,7 +52,7 @@ type identity struct {
 	validationErr error
 }
 
-func newIdentity(cert *x509.Certificate, pk bccsp.Key, msp *bccspmsp) (Identity, error) {
+func newIdentity(cert *x509.Certificate, pk, pqPk bccsp.Key, msp *bccspmsp) (Identity, error) {
 	if mspIdentityLogger.IsEnabledFor(zapcore.DebugLevel) {
 		mspIdentityLogger.Debugf("Creating identity instance for cert %s", certToPEM(cert))
 	}
@@ -81,7 +81,7 @@ func newIdentity(cert *x509.Certificate, pk bccsp.Key, msp *bccspmsp) (Identity,
 		Id:    hex.EncodeToString(digest),
 	}
 
-	return &identity{id: id, cert: cert, pk: pk, msp: msp}, nil
+	return &identity{id: id, cert: cert, pk: pk, pqPk: pqPk, msp: msp}, nil
 }
 
 // ExpiresAt returns the time at which the Identity expires.
@@ -187,6 +187,10 @@ func (id *identity) Verify(msg []byte, sig []byte) error {
 		// mspIdentityLogger.Debugf("Verify: sig = %s", hex.Dump(sig))
 	}
 
+	if id.pqPk != nil {
+		// If the identity has a public pqkey
+	}
+
 	valid, err := id.msp.bccsp.Verify(id.pk, sig, digest, nil)
 	if err != nil {
 		return errors.WithMessage(err, "could not determine the validity of the signature")
@@ -234,9 +238,9 @@ type signingidentity struct {
 	signer crypto.Signer
 }
 
-func newSigningIdentity(cert *x509.Certificate, pk bccsp.Key, signer crypto.Signer, msp *bccspmsp) (SigningIdentity, error) {
+func newSigningIdentity(cert *x509.Certificate, pk, pqPk bccsp.Key, signer crypto.Signer, msp *bccspmsp) (SigningIdentity, error) {
 	// mspIdentityLogger.Infof("Creating signing identity instance for ID %s", id)
-	mspId, err := newIdentity(cert, pk, msp)
+	mspId, err := newIdentity(cert, pk, pqPk, msp)
 	if err != nil {
 		return nil, err
 	}
@@ -246,6 +250,7 @@ func newSigningIdentity(cert *x509.Certificate, pk bccsp.Key, signer crypto.Sign
 			cert: mspId.(*identity).cert,
 			msp:  mspId.(*identity).msp,
 			pk:   mspId.(*identity).pk,
+			pqPk: mspId.(*identity).pqPk,
 		},
 		signer: signer,
 	}, nil

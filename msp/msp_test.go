@@ -49,11 +49,11 @@ FRBbKkDnSpaVcZgjns+mLdHV2JkF0gk=
 -----END X509 CRL-----`
 
 func TestMSPParsers(t *testing.T) {
-	_, _, err := localMsp.(*bccspmsp).getIdentityFromConf(nil)
+	_, _, _, err := localMsp.(*bccspmsp).getIdentityFromConf(nil)
 	require.Error(t, err)
-	_, _, err = localMsp.(*bccspmsp).getIdentityFromConf([]byte("barf"))
+	_, _, _, err = localMsp.(*bccspmsp).getIdentityFromConf([]byte("barf"))
 	require.Error(t, err)
-	_, _, err = localMsp.(*bccspmsp).getIdentityFromConf([]byte(notACert))
+	_, _, _, err = localMsp.(*bccspmsp).getIdentityFromConf([]byte(notACert))
 	require.Error(t, err)
 
 	_, err = localMsp.(*bccspmsp).getSigningIdentityFromConf(nil)
@@ -1413,7 +1413,7 @@ func getIdentity(t *testing.T, path string) Identity {
 	pems, err := getPemMaterialFromDir(filepath.Join(mspDir, path))
 	require.NoError(t, err)
 
-	id, _, err := localMsp.(*bccspmsp).getIdentityFromConf(pems[0])
+	id, _, _, err := localMsp.(*bccspmsp).getIdentityFromConf(pems[0])
 	require.NoError(t, err)
 
 	return id
