@@ -8,6 +8,7 @@ package sw
 
 import (
 	"crypto/ecdsa"
+	"crypto/liboqs-go/oqs"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/asn1"
@@ -168,11 +169,10 @@ func (ki *x509AltPublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts
 
 }
 
-/*
 type oqsGoPublicKeyImportOptsKeyImporter struct{}
 
 func (*oqsGoPublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (bccsp.Key, error) {
-	lowLevelKey, ok := raw.(*oqs.PublicKey)
+	lowLevelKey, ok := raw.(*oqs.Signature)
 	if !ok {
 		return nil, errors.New("Invalid raw material. Expected *oqs.PublicKey.")
 	}
@@ -180,6 +180,7 @@ func (*oqsGoPublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bccs
 	return &oqsPublicKey{lowLevelKey}, nil
 }
 
+/*
 type oqsPKIXPublicKeyImportOptsKeyImporter struct{}
 
 func (*oqsPKIXPublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (bccsp.Key, error) {
@@ -203,5 +204,4 @@ func (*oqsPKIXPublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bc
 	}
 
 	return &oqsPublicKey{oqsPK}, nil
-}
-*/
+}*/
