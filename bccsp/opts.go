@@ -61,7 +61,8 @@ const (
 	X509Certificate = "X509Certificate"
 
 	// Quantum-safe encryption algorithm
-	QS = "QS"
+	QS         = "QS"
+	DILITHIUM2 = "DILITHIUM2"
 )
 
 // ECDSAKeyGenOpts contains options for ECDSA key generation.
@@ -332,5 +333,20 @@ func (opts *OQSGoPublicKeyImportOpts) Algorithm() string {
 // Ephemeral returns true if the key to generate has to be ephemeral,
 // false otherwise.
 func (opts *OQSGoPublicKeyImportOpts) Ephemeral() bool {
+	return opts.Temporary
+}
+
+type DILITHIUMGoPublicKeyImportOpts struct {
+	Temporary bool
+}
+
+// Algorithm returns the key generation algorithm identifier (to be used).
+func (opts *DILITHIUMGoPublicKeyImportOpts) Algorithm() string {
+	return DILITHIUM2
+}
+
+// Ephemeral returns true if the key to generate has to be ephemeral,
+// false otherwise.
+func (opts *DILITHIUMGoPublicKeyImportOpts) Ephemeral() bool {
 	return opts.Temporary
 }

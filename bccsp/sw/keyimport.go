@@ -9,6 +9,7 @@ package sw
 import (
 	"crypto/ecdsa"
 	"crypto/liboqs-go/oqs"
+	dilithium2 "crypto/pqc/dilithium/dilithium2"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/asn1"
@@ -20,7 +21,8 @@ import (
 )
 
 var (
-	oidAltPublicKeyInfo = asn1.ObjectIdentifier{2, 5, 29, 71}
+	oidAltPublicKeyInfo    = asn1.ObjectIdentifier{2, 5, 29, 71}
+	oidSignatureDilithium2 = asn1.ObjectIdentifier{1, 2, 1, 0}
 )
 
 type aes256ImportKeyOptsKeyImporter struct{}
@@ -157,10 +159,15 @@ func (ki *x509AltPublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts
 	//TODO: check if it's better Extensions or Extraextension. CheckId to be defined
 	for _, ext := range x509Cert.ExtraExtensions {
 		if reflect.DeepEqual(ext.Id, oidAltPublicKeyInfo) {
-			qpPub := ext.Value
 			return ki.bccsp.KeyImporters[reflect.TypeOf(&bccsp.OQSGoPublicKeyImportOpts{})].KeyImport(
-				qpPub,
+				ext.Value,
 				&bccsp.OQSGoPublicKeyImportOpts{Temporary: opts.Ephemeral()})
+		}
+
+		if reflect.DeepEqual(ext.Id, oidAltPublicKeyInfo) {
+			return ki.bccsp.KeyImporters[reflect.TypeOf(&bccsp.DILITHIUMGoPublicKeyImportOpts{})].KeyImport(
+				ext.Value,
+				&bccsp.DILITHIUMGoPublicKeyImportOpts{Temporary: opts.Ephemeral()})
 		}
 	}
 
@@ -178,6 +185,17 @@ func (*oqsGoPublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bccs
 	}
 
 	return &oqsPublicKey{lowLevelKey}, nil
+}
+
+type dilithiumGoPublicKeyImportOptsKeyImporter struct{}
+
+func (*dilithiumGoPublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (bccsp.Key, error) {
+	lowLevelKey, ok := raw.(*dilithium2.PublicKey)
+	if !ok {
+		return nil, errors.New("Invalid raw material. Expected *oqs.PublicKey.")
+	}
+
+	return &dilithiumPublicKey{lowLevelKey}, nil
 }
 
 /*

@@ -803,6 +803,9 @@ func TestKeyImportFromX509ECDSAPublicKey(t *testing.T) {
 		t.Fatalf("Failed generating ECDSA key [%s]", err)
 	}
 
+	//TODO check
+	pqK, err := provider.KeyGen(&bccsp.DILITHIUMKeyGenOpts{Temporary: false})
+
 	// Generate a self-signed certificate
 	testExtKeyUsage := []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth}
 	testUnknownExtKeyUsage := []asn1.ObjectIdentifier{[]int{1, 2, 3}, []int{2, 59, 1}}
@@ -860,7 +863,7 @@ func TestKeyImportFromX509ECDSAPublicKey(t *testing.T) {
 		},
 	}
 
-	cryptoSigner, err := signer.New(provider, k)
+	cryptoSigner, err := signer.New(provider, k, pqK)
 	if err != nil {
 		t.Fatalf("Failed initializing CyrptoSigner [%s]", err)
 	}

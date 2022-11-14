@@ -10,6 +10,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/asn1"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
@@ -25,6 +26,11 @@ import (
 )
 
 var mspIdentityLogger = flogging.MustGetLogger("msp.identity")
+
+type hybridSignature struct {
+	ClassicalSign asn1.BitString
+	QuantumSign   asn1.BitString
+}
 
 type identity struct {
 	// id contains the identifier (MSPID and identity identifier) for this instance
@@ -189,6 +195,36 @@ func (id *identity) Verify(msg []byte, sig []byte) error {
 
 	if id.pqPk != nil {
 		// If the identity has a public pqkey
+		mspIdentityLogger.Debug("Verifying with quantum-safe public key.")
+		var hsu hybridSignature
+		if rest, err := asn1.Unmarshal(sig, &hsu); err != nil {
+			return err
+		} else if len(rest) != 0 {
+			return errors.New("invalid signature format for quantum signature")
+		}
+		valid, err := id.msp.bccsp.Verify(id.pqPk, hsu.QuantumSign.RightAlign(), digest, nil)
+		if err != nil {
+			return errors.WithMessage(err, "could not determine the validity of the quantum signature")
+		} else if !valid {
+			return errors.New("The quantum signature is invalid")
+		}
+
+		// If the quantum part of the signature is valid,
+		// continue to check the classical signature.
+		sig = hsu.ClassicalSign.RightAlign()
+		// The classical part of the hybrid signer will have signed
+		// [digest, quantum_signature]
+		// So we append them here.
+		digest = append(digest, hsu.QuantumSign.RightAlign()...)
+		// Must use SHA384 for post-quantum.
+		hashopt, err := bccsp.GetHashOpt(bccsp.SHA384)
+		if err != nil {
+			return err
+		}
+		digest, err = id.msp.bccsp.Hash(digest, hashopt)
+		if err != nil {
+			return err
+		}
 	}
 
 	valid, err := id.msp.bccsp.Verify(id.pk, sig, digest, nil)
@@ -196,7 +232,7 @@ func (id *identity) Verify(msg []byte, sig []byte) error {
 		return errors.WithMessage(err, "could not determine the validity of the signature")
 	} else if !valid {
 		mspIdentityLogger.Warnf("The signature is invalid for (certificate subject=%s issuer=%s serialnumber=%d)", id.cert.Subject, id.cert.Issuer, id.cert.SerialNumber)
-		return errors.New("The signature is invalid")
+		return errors.New("The classical signature is invalid")
 	}
 
 	return nil
