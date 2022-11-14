@@ -803,8 +803,11 @@ func TestKeyImportFromX509ECDSAPublicKey(t *testing.T) {
 		t.Fatalf("Failed generating ECDSA key [%s]", err)
 	}
 
-	//TODO check
+	// TODO check
 	pqK, err := provider.KeyGen(&bccsp.DILITHIUMKeyGenOpts{Temporary: false})
+	if err != nil {
+		t.Fatalf("Failed generating DILITHIUM key [%s]", err)
+	}
 
 	// Generate a self-signed certificate
 	testExtKeyUsage := []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth}

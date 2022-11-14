@@ -197,9 +197,9 @@ func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, bccsp.Key, b
 		return nil, nil, nil, err
 	}
 
-	//get an alternative public PQkey
+	// get an alternative public PQkey
 	certPQPubK, err := msp.bccsp.KeyImport(cert, &bccsp.X509AltPublicKeyImportOpts{Temporary: true})
-	//TODO: check for err
+	// TODO: check for err
 	if certPQPubK != nil {
 		mspLogger.Debug("Successfully imported quantum-safe public key from certificate")
 	}
@@ -435,7 +435,7 @@ func (msp *bccspmsp) deserializeIdentityInternal(serializedIdentity []byte) (Ide
 	}
 
 	pqPub, err := msp.bccsp.KeyImport(cert, &bccsp.X509AltPublicKeyImportOpts{Temporary: true})
-	//TODO: check for err
+	// TODO: check for err
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to import certificate's public pqkey")
 	}

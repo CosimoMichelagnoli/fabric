@@ -70,7 +70,7 @@ func (k *dilithiumPublicKey) SKI() []byte {
 	hash := sha256.New()
 	hash.Write(append(k.pubKey.Pk, algBytes...))
 	return hash.Sum(nil)
-} //TODO not used
+} // TODO not used
 
 func (k *dilithiumPublicKey) Symmetric() bool {
 	return false

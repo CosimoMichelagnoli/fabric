@@ -156,7 +156,7 @@ func (ki *x509AltPublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts
 		return nil, errors.New("Invalid raw material. Expected *x509.Certificate.")
 	}
 
-	//TODO: check if it's better Extensions or Extraextension. CheckId to be defined
+	// TODO: check if it's better Extensions or Extraextension. CheckId to be defined
 	for _, ext := range x509Cert.ExtraExtensions {
 		if reflect.DeepEqual(ext.Id, oidAltPublicKeyInfo) {
 			return ki.bccsp.KeyImporters[reflect.TypeOf(&bccsp.OQSGoPublicKeyImportOpts{})].KeyImport(
@@ -173,7 +173,6 @@ func (ki *x509AltPublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts
 
 	opts.(*bccsp.X509AltPublicKeyImportOpts).Temporary = true
 	return nil, nil
-
 }
 
 type oqsGoPublicKeyImportOptsKeyImporter struct{}

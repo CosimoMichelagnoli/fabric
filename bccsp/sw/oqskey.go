@@ -64,7 +64,7 @@ func (k *oqsPublicKey) SKI() []byte {
 	hash := sha256.New()
 	hash.Write(append(k.pubKey.ExportPublicKey(), algBytes...))
 	return hash.Sum(nil)
-} //TODO not used
+} // TODO not used
 
 func (k *oqsPublicKey) Symmetric() bool {
 	return false
