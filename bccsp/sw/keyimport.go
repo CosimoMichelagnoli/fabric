@@ -164,7 +164,7 @@ func (ki *x509AltPublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts
 				&bccsp.OQSGoPublicKeyImportOpts{Temporary: opts.Ephemeral()})
 		}
 
-		if reflect.DeepEqual(ext.Id, oidAltPublicKeyInfo) {
+		if reflect.DeepEqual(ext.Id, oidSignatureDilithium2) {
 			return ki.bccsp.KeyImporters[reflect.TypeOf(&bccsp.DILITHIUMGoPublicKeyImportOpts{})].KeyImport(
 				ext.Value,
 				&bccsp.DILITHIUMGoPublicKeyImportOpts{Temporary: opts.Ephemeral()})
