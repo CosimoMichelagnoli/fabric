@@ -23,7 +23,7 @@ type DILITHIUMKeyGenOpts struct {
 
 // Algorithm returns the key generation algorithm identifier (to be used).
 func (opts *DILITHIUMKeyGenOpts) Algorithm() string {
-	return DILITHIUM2
+	return DILITHIUM
 }
 
 // Ephemeral returns true if the key to generate has to be ephemeral,

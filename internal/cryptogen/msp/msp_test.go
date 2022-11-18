@@ -28,6 +28,7 @@ const (
 	testOrganizationalUnit = "Hyperledger Fabric"
 	testStreetAddress      = "testStreetAddress"
 	testPostalCode         = "123456"
+	oqsAlg                 = true
 )
 
 var testDir = filepath.Join(os.TempDir(), "msp-test")

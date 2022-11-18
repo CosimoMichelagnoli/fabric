@@ -10,7 +10,6 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/x509"
-	"encoding/asn1"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
@@ -27,11 +26,6 @@ import (
 
 var mspIdentityLogger = flogging.MustGetLogger("msp.identity")
 
-type hybridSignature struct {
-	ClassicalSign asn1.BitString
-	QuantumSign   asn1.BitString
-}
-
 type identity struct {
 	// id contains the identifier (MSPID and identity identifier) for this instance
 	id *IdentityIdentifier
@@ -40,7 +34,7 @@ type identity struct {
 	cert *x509.Certificate
 
 	// this is the public key of this instance
-	pk, pqPk bccsp.Key
+	pk bccsp.Key
 
 	// reference to the MSP that "owns" this identity
 	msp *bccspmsp
@@ -58,7 +52,7 @@ type identity struct {
 	validationErr error
 }
 
-func newIdentity(cert *x509.Certificate, pk, pqPk bccsp.Key, msp *bccspmsp) (Identity, error) {
+func newIdentity(cert *x509.Certificate, pk bccsp.Key, msp *bccspmsp) (Identity, error) {
 	if mspIdentityLogger.IsEnabledFor(zapcore.DebugLevel) {
 		mspIdentityLogger.Debugf("Creating identity instance for cert %s", certToPEM(cert))
 	}
@@ -87,7 +81,7 @@ func newIdentity(cert *x509.Certificate, pk, pqPk bccsp.Key, msp *bccspmsp) (Ide
 		Id:    hex.EncodeToString(digest),
 	}
 
-	return &identity{id: id, cert: cert, pk: pk, pqPk: pqPk, msp: msp}, nil
+	return &identity{id: id, cert: cert, pk: pk, msp: msp}, nil
 }
 
 // ExpiresAt returns the time at which the Identity expires.
@@ -193,40 +187,6 @@ func (id *identity) Verify(msg []byte, sig []byte) error {
 		// mspIdentityLogger.Debugf("Verify: sig = %s", hex.Dump(sig))
 	}
 
-	if id.pqPk != nil {
-		// If the identity has a public pqkey
-		mspIdentityLogger.Debug("Verifying with quantum-safe public key.")
-		var hsu hybridSignature
-		if rest, err := asn1.Unmarshal(sig, &hsu); err != nil {
-			return err
-		} else if len(rest) != 0 {
-			return errors.New("invalid signature format for quantum signature")
-		}
-		valid, err := id.msp.bccsp.Verify(id.pqPk, hsu.QuantumSign.RightAlign(), digest, nil)
-		if err != nil {
-			return errors.WithMessage(err, "could not determine the validity of the quantum signature")
-		} else if !valid {
-			return errors.New("The quantum signature is invalid")
-		}
-
-		// If the quantum part of the signature is valid,
-		// continue to check the classical signature.
-		sig = hsu.ClassicalSign.RightAlign()
-		// The classical part of the hybrid signer will have signed
-		// [digest, quantum_signature]
-		// So we append them here.
-		digest = append(digest, hsu.QuantumSign.RightAlign()...)
-		// Must use SHA384 for post-quantum.
-		hashopt, err := bccsp.GetHashOpt(bccsp.SHA384)
-		if err != nil {
-			return err
-		}
-		digest, err = id.msp.bccsp.Hash(digest, hashopt)
-		if err != nil {
-			return err
-		}
-	}
-
 	valid, err := id.msp.bccsp.Verify(id.pk, sig, digest, nil)
 	if err != nil {
 		return errors.WithMessage(err, "could not determine the validity of the signature")
@@ -274,9 +234,9 @@ type signingidentity struct {
 	signer crypto.Signer
 }
 
-func newSigningIdentity(cert *x509.Certificate, pk, pqPk bccsp.Key, signer crypto.Signer, msp *bccspmsp) (SigningIdentity, error) {
+func newSigningIdentity(cert *x509.Certificate, pk bccsp.Key, signer crypto.Signer, msp *bccspmsp) (SigningIdentity, error) {
 	// mspIdentityLogger.Infof("Creating signing identity instance for ID %s", id)
-	mspId, err := newIdentity(cert, pk, pqPk, msp)
+	mspId, err := newIdentity(cert, pk, msp)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +246,6 @@ func newSigningIdentity(cert *x509.Certificate, pk, pqPk bccsp.Key, signer crypt
 			cert: mspId.(*identity).cert,
 			msp:  mspId.(*identity).msp,
 			pk:   mspId.(*identity).pk,
-			pqPk: mspId.(*identity).pqPk,
 		},
 		signer: signer,
 	}, nil

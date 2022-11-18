@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 package ca_test
 
 import (
-	"crypto/ecdsa"
+	"crypto/pqc/dilithium/dilithium5"
 	"crypto/x509"
 	"io/ioutil"
 	"net"
@@ -33,6 +33,7 @@ const (
 	testOrganizationalUnit = "Hyperledger Fabric"
 	testStreetAddress      = "testStreetAddress"
 	testPostalCode         = "123456"
+	oqsAlg                 = true
 )
 
 func TestLoadCertificateECDSA(t *testing.T) {
@@ -47,7 +48,7 @@ func TestLoadCertificateECDSA(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create certs directory: %s", err)
 	}
-	priv, err := csp.GeneratePrivateKey(certDir)
+	priv, err := csp.GenerateDilithiumPrivateKey(certDir)
 	require.NoError(t, err, "Failed to generate signed certificate")
 
 	// create our CA
@@ -174,7 +175,7 @@ func TestGenerateSignCertificate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create certs directory: %s", err)
 	}
-	priv, err := csp.GeneratePrivateKey(certDir)
+	priv, err := csp.GenerateDilithiumPrivateKey(certDir)
 	require.NoError(t, err, "Failed to generate signed certificate")
 
 	// create our CA
@@ -251,7 +252,7 @@ func TestGenerateSignCertificate(t *testing.T) {
 		Name:     "badCA",
 		SignCert: &x509.Certificate{},
 	}
-	_, err = badCA.SignCertificate(certDir, testName, nil, nil, &ecdsa.PublicKey{},
+	_, err = badCA.SignCertificate(certDir, testName, nil, nil, &dilithium5.PublicKey{},
 		x509.KeyUsageKeyEncipherment, []x509.ExtKeyUsage{x509.ExtKeyUsageAny})
 	require.Error(t, err, "Empty CA should not be able to sign")
 }

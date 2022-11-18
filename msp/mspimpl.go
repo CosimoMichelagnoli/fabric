@@ -184,31 +184,25 @@ func (msp *bccspmsp) getCertFromPem(idBytes []byte) (*x509.Certificate, error) {
 	return cert, nil
 }
 
-func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, bccsp.Key, bccsp.Key, error) {
+func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, bccsp.Key, error) {
 	// get a cert
 	cert, err := msp.getCertFromPem(idBytes)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	// get the public key in the right format
 	certPubK, err := msp.bccsp.KeyImport(cert, &bccsp.X509PublicKeyImportOpts{Temporary: true})
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
-	// get an alternative public PQkey
-	certPQPubK, err := msp.bccsp.KeyImport(cert, &bccsp.X509AltPublicKeyImportOpts{Temporary: true})
-	// TODO: check for err
-	if certPQPubK != nil {
-		mspLogger.Debug("Successfully imported quantum-safe public key from certificate")
-	}
-	mspId, err := newIdentity(cert, certPubK, certPQPubK, msp)
+	mspId, err := newIdentity(cert, certPubK, msp)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
-	return mspId, certPubK, certPQPubK, nil
+	return mspId, certPubK, nil
 }
 
 func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) (SigningIdentity, error) {
@@ -217,7 +211,7 @@ func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) 
 	}
 
 	// Extract the public part of the identity
-	idPub, pubKey, pqPubKey, err := msp.getIdentityFromConf(sidInfo.PublicSigner)
+	idPub, pubKey, err := msp.getIdentityFromConf(sidInfo.PublicSigner)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +220,7 @@ func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) 
 	privKey, err := msp.bccsp.GetKey(pubKey.SKI())
 	// Less Secure: Attempt to import Private Key from KeyInfo, if BCCSP was not able to find the key
 	if err != nil {
-		mspLogger.Debugf("Could not find SKI [%s], trying KeyMaterial field: %+v\n", hex.EncodeToString(pubKey.SKI()), err)
+		mspLogger.Debugf("Could not find SKI [%s], trying PQKeyMaterial field: %+v\n", hex.EncodeToString(pubKey.SKI()), err)
 		if sidInfo.PrivateSigner == nil || sidInfo.PrivateSigner.KeyMaterial == nil {
 			return nil, errors.New("KeyMaterial not found in SigningIdentityInfo")
 		}
@@ -241,24 +235,15 @@ func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) 
 		}
 	}
 
-	var pqPrivKey bccsp.Key = nil
-	if pqPubKey != nil {
-		// Find the matching private PQKey in the BCCSP keystore
-		pqPrivKey, err = msp.bccsp.GetKey(pqPubKey.SKI())
-		if err != nil {
-			mspLogger.Debugf("Could not find SKI [%s], trying PQKeyMaterial field: %+v\n", hex.EncodeToString(pqPubKey.SKI()), err)
-			return nil, errors.New("PQKeyMaterial not found in SigningIdentityInfo")
-		}
-		mspLogger.Debug("Successfully extracted quantum-safe private key")
-	}
+	mspLogger.Debug("Successfully extracted quantum-safe private key")
 
 	// get the peer signer
-	peerSigner, err := signer.New(msp.bccsp, privKey, pqPrivKey)
+	peerSigner, err := signer.New(msp.bccsp, privKey)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getIdentityFromBytes error: Failed initializing bccspCryptoSigner")
 	}
 
-	return newSigningIdentity(idPub.(*identity).cert, idPub.(*identity).pk, idPub.(*identity).pqPk, peerSigner, msp)
+	return newSigningIdentity(idPub.(*identity).cert, idPub.(*identity).pk, peerSigner, msp)
 }
 
 // Setup sets up the internal data structures
@@ -434,13 +419,7 @@ func (msp *bccspmsp) deserializeIdentityInternal(serializedIdentity []byte) (Ide
 		return nil, errors.WithMessage(err, "failed to import certificate's public key")
 	}
 
-	pqPub, err := msp.bccsp.KeyImport(cert, &bccsp.X509AltPublicKeyImportOpts{Temporary: true})
-	// TODO: check for err
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to import certificate's public pqkey")
-	}
-
-	return newIdentity(cert, pub, pqPub, msp)
+	return newIdentity(cert, pub, msp)
 }
 
 // SatisfiesPrincipal returns nil if the identity matches the principal or an error otherwise

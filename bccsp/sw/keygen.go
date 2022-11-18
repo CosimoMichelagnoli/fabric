@@ -19,7 +19,7 @@ package sw
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	dilithium2 "crypto/pqc/dilithium/dilithium2"
+	dilithium5 "crypto/pqc/dilithium/dilithium5"
 	"crypto/rand"
 	"fmt"
 
@@ -57,7 +57,7 @@ type dilithiumKeyGenerator struct {
 }
 
 func (kg *dilithiumKeyGenerator) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error) {
-	privKey, err := dilithium2.GenerateKey()
+	privKey, err := dilithium5.GenerateKey()
 	if err != nil {
 		return nil, fmt.Errorf("Failed generating ECDSA key for [%v]: [%s]", kg.curve, err)
 	}

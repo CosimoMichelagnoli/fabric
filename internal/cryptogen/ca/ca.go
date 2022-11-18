@@ -9,10 +9,12 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/pqc/dilithium/dilithium5"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/pem"
 	"io/ioutil"
 	"math/big"
@@ -25,6 +27,22 @@ import (
 	"github.com/hyperledger/fabric/internal/cryptogen/csp"
 	"github.com/pkg/errors"
 )
+
+var (
+	oidOqsSignature        = asn1.ObjectIdentifier{1, 2, 3, 4}
+	oidPublicKeydilithium5 = asn1.ObjectIdentifier{1, 5, 1, 2}
+)
+
+const (
+	sigName        = "dilithium5"
+	PublicKeySize  = 2592
+	PrivateKeySize = 4864
+)
+
+type pkixPublicKey struct {
+	Algorithm pkix.AlgorithmIdentifier
+	PublicKey asn1.BitString
+}
 
 type CA struct {
 	Name               string
@@ -58,7 +76,7 @@ func NewCA(
 		return nil, err
 	}
 
-	priv, err := csp.GeneratePrivateKey(baseDir)
+	priv, err := csp.GenerateDilithiumPrivateKey(baseDir)
 	if err != nil {
 		return nil, err
 	}
@@ -80,10 +98,9 @@ func NewCA(
 	subject.CommonName = name
 
 	template.Subject = subject
-	template.SubjectKeyId = computeSKI(priv)
+	template.SubjectKeyId = computeDilithiumSKI(priv)
 
-	x509Cert, err := genCertificateECDSA(
-		baseDir,
+	x509Cert, err := genCertificateDILITHIUM(baseDir,
 		name,
 		&template,
 		&template,
@@ -93,9 +110,12 @@ func NewCA(
 	if err != nil {
 		return nil, err
 	}
+
+	//fmt.Printf("Error generating MSP for org :\n", len(priv))
+
 	ca = &CA{
 		Name: name,
-		Signer: &csp.ECDSASigner{
+		Signer: &csp.DILITHIUMSigner{
 			PrivateKey: priv,
 		},
 		SignCert:           x509Cert,
@@ -117,7 +137,7 @@ func (ca *CA) SignCertificate(
 	name string,
 	orgUnits,
 	alternateNames []string,
-	pub *ecdsa.PublicKey,
+	pub *dilithium5.PublicKey,
 	ku x509.KeyUsage,
 	eku []x509.ExtKeyUsage,
 ) (*x509.Certificate, error) {
@@ -149,7 +169,7 @@ func (ca *CA) SignCertificate(
 		}
 	}
 
-	cert, err := genCertificateECDSA(
+	cert, err := genCertificateDILITHIUM(
 		baseDir,
 		name,
 		&template,
@@ -171,6 +191,16 @@ func computeSKI(privKey *ecdsa.PrivateKey) []byte {
 
 	// Hash it
 	hash := sha256.Sum256(raw)
+	return hash[:]
+}
+
+// compute Subject Key Identifier using RFC 7093, Section 2, Method 4
+func computeDilithiumSKI(privKey *dilithium5.PrivateKey) []byte {
+	// Marshall the public key
+	algBytes := []byte(sigName)
+
+	// Hash it
+	hash := sha256.Sum256(append(privKey.Sk, algBytes...))
 	return hash[:]
 }
 
@@ -243,6 +273,41 @@ func genCertificateECDSA(
 	template,
 	parent *x509.Certificate,
 	pub *ecdsa.PublicKey,
+	priv interface{},
+) (*x509.Certificate, error) {
+	// create the x509 public cert
+	certBytes, err := x509.CreateCertificate(rand.Reader, template, parent, pub, priv)
+	if err != nil {
+		return nil, err
+	}
+
+	// write cert out to file
+	fileName := filepath.Join(baseDir, name+"-cert.pem")
+	certFile, err := os.Create(fileName)
+	if err != nil {
+		return nil, err
+	}
+	// pem encode the cert
+	err = pem.Encode(certFile, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
+	certFile.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	x509Cert, err := x509.ParseCertificate(certBytes)
+	if err != nil {
+		return nil, err
+	}
+	return x509Cert, nil
+}
+
+// generate a signed X509 certificate using ECDSA
+func genCertificateDILITHIUM(
+	baseDir,
+	name string,
+	template,
+	parent *x509.Certificate,
+	pub *dilithium5.PublicKey,
 	priv interface{},
 ) (*x509.Certificate, error) {
 	// create the x509 public cert

@@ -69,7 +69,7 @@ func GenerateLocalMSP(
 	keystore := filepath.Join(mspDir, "keystore")
 
 	// generate private key
-	priv, err := csp.GeneratePrivateKey(keystore)
+	priv, err := csp.GenerateDilithiumPrivateKey(keystore)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func GenerateLocalMSP(
 	*/
 
 	// generate private key
-	tlsPrivKey, err := csp.GeneratePrivateKey(tlsDir)
+	tlsPrivKey, err := csp.GenerateDilithiumPrivateKey(tlsDir)
 	if err != nil {
 		return err
 	}
@@ -204,6 +204,7 @@ func GenerateVerifyingMSP(
 		filepath.Join(baseDir, "tlscacerts", x509Filename(tlsCA.Name)),
 		tlsCA.SignCert,
 	)
+
 	if err != nil {
 		return err
 	}
@@ -228,7 +229,7 @@ func GenerateVerifyingMSP(
 	if err != nil {
 		return errors.WithMessage(err, "failed to create keystore directory")
 	}
-	priv, err := csp.GeneratePrivateKey(ksDir)
+	priv, err := csp.GenerateDilithiumPrivateKey(ksDir)
 	if err != nil {
 		return err
 	}

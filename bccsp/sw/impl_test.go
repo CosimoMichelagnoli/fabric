@@ -797,14 +797,8 @@ func TestKeyImportFromX509ECDSAPublicKey(t *testing.T) {
 	provider, _, cleanup := currentTestConfig.Provider(t)
 	defer cleanup()
 
-	// Generate an ECDSA key
+	// Generate an DILITHIUM key
 	k, err := provider.KeyGen(&bccsp.ECDSAKeyGenOpts{Temporary: false})
-	if err != nil {
-		t.Fatalf("Failed generating ECDSA key [%s]", err)
-	}
-
-	// TODO check
-	pqK, err := provider.KeyGen(&bccsp.DILITHIUMKeyGenOpts{Temporary: false})
 	if err != nil {
 		t.Fatalf("Failed generating DILITHIUM key [%s]", err)
 	}
@@ -866,7 +860,7 @@ func TestKeyImportFromX509ECDSAPublicKey(t *testing.T) {
 		},
 	}
 
-	cryptoSigner, err := signer.New(provider, k, pqK)
+	cryptoSigner, err := signer.New(provider, k)
 	if err != nil {
 		t.Fatalf("Failed initializing CyrptoSigner [%s]", err)
 	}

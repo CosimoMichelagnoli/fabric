@@ -9,6 +9,7 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	dilithium5 "crypto/pqc/dilithium/dilithium5"
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/asn1"
@@ -96,6 +97,30 @@ func GeneratePrivateKey(keystorePath string) (*ecdsa.PrivateKey, error) {
 	return priv, err
 }
 
+// GenerateOqsPrivateKey creates a quantum-safe private key using Dilithium and stores
+// it in keystorePath.
+func GenerateDilithiumPrivateKey(keystorePath string) (*dilithium5.PrivateKey, error) {
+	priv, err := dilithium5.GenerateKey()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to generate quantum-safe private key")
+	}
+
+	pkcs8Encoded, err := x509.MarshalPKCS8PrivateKey(priv)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to marshal private key")
+	}
+
+	pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: pkcs8Encoded})
+
+	keyFile := filepath.Join(keystorePath, "priv_sk")
+	err = ioutil.WriteFile(keyFile, pemEncoded, 0o600)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to save private key to file %s", keyFile)
+	}
+
+	return priv, err
+}
+
 /*
 *
 ECDSA signer implements the crypto.Signer interface for ECDSA keys.  The
@@ -131,6 +156,26 @@ func (e *ECDSASigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts
 
 	// return marshaled signature
 	return asn1.Marshal(sig)
+}
+
+type DILITHIUMSigner struct {
+	PrivateKey *dilithium5.PrivateKey
+}
+
+// Public returns the dilithium.PublicKey associated with PrivateKey.
+func (d *DILITHIUMSigner) Public() crypto.PublicKey {
+	return &d.PrivateKey.PublicKey
+}
+
+// Sign signs the digest.
+func (d *DILITHIUMSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) ([]byte, error) {
+	sig, err := d.PrivateKey.SignPQC(digest)
+	if err != nil {
+		return nil, err
+	}
+
+	// return marshaled signature
+	return sig, err
 }
 
 /*

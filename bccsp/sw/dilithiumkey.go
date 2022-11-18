@@ -1,7 +1,7 @@
 package sw
 
 import (
-	dilithium2 "crypto/pqc/dilithium/dilithium2"
+	dilithium5 "crypto/pqc/dilithium/dilithium5"
 	"crypto/sha256"
 	"errors"
 
@@ -9,14 +9,14 @@ import (
 )
 
 const (
-	sigName        = "Dilithium2"
-	PublicKeySize  = 1312
-	PrivateKeySize = 2528
+	sigName        = "dilithium5"
+	PublicKeySize  = 2592
+	PrivateKeySize = 4864
 )
 
 // dilithiumPrivateKey implements a bccsp.Key interface
 type dilithiumPrivateKey struct {
-	privKey *dilithium2.PrivateKey
+	privKey *dilithium5.PrivateKey
 }
 
 // Bytes converts this key to its byte representation,
@@ -52,7 +52,7 @@ func (k *dilithiumPrivateKey) PublicKey() (bccsp.Key, error) {
 
 // dilithiumPublicKey implements a bccsp.Key interface
 type dilithiumPublicKey struct {
-	pubKey *dilithium2.PublicKey
+	pubKey *dilithium5.PublicKey
 }
 
 func (k *dilithiumPublicKey) Bytes() ([]byte, error) {
