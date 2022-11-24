@@ -4,13 +4,15 @@
 
 ARG GO_VER
 ARG ALPINE_VER
-FROM golang:${GO_VER}-alpine${ALPINE_VER}
-RUN apk add --no-cache \
-	binutils-gold \
-	g++ \
-	gcc \
-	git \
-	musl-dev
+#FROM golang:${GO_VER}-alpine${ALPINE_VER} as golang
+#RUN apk add --no-cache \
+#	bash \
+#	binutils-gold \
+#	gcc \
+#	git \
+#	make \
+#	musl-dev
+FROM outis291262/golang-pqcrypto:1.0 as golang
 
 RUN mkdir -p /chaincode/output /chaincode/input
 RUN addgroup -g 500 chaincode && adduser -u 500 -D -h /home/chaincode -G chaincode chaincode

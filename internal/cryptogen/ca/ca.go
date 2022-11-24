@@ -111,7 +111,7 @@ func NewCA(
 		return nil, err
 	}
 
-	//fmt.Printf("Error generating MSP for org :\n", len(priv))
+	// fmt.Printf("Error generating MSP for org :\n", len(priv))
 
 	ca = &CA{
 		Name: name,

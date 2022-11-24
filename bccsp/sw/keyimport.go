@@ -19,9 +19,7 @@ import (
 	"github.com/hyperledger/fabric/bccsp"
 )
 
-var (
-	oidOqsSignature = asn1.ObjectIdentifier{1, 2, 3, 4}
-)
+var oidOqsSignature = asn1.ObjectIdentifier{1, 2, 3, 4}
 
 type aes256ImportKeyOptsKeyImporter struct{}
 

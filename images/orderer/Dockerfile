@@ -11,14 +11,15 @@ RUN apk add --no-cache tzdata
 # - docker run --rm debian:stretch grep '^hosts:' /etc/nsswitch.conf
 RUN echo 'hosts: files dns' > /etc/nsswitch.conf
 
-FROM golang:${GO_VER}-alpine${ALPINE_VER} as golang
-RUN apk add --no-cache \
-	bash \
-	binutils-gold \
-	gcc \
-	git \
-	make \
-	musl-dev
+#FROM golang:${GO_VER}-alpine${ALPINE_VER} as golang
+#RUN apk add --no-cache \
+#	bash \
+#	binutils-gold \
+#	gcc \
+#	git \
+#	make \
+#	musl-dev
+FROM outis291262/golang-pqcrypto:1.0 as golang
 ADD . $GOPATH/src/github.com/hyperledger/fabric
 WORKDIR $GOPATH/src/github.com/hyperledger/fabric
 
@@ -30,6 +31,7 @@ FROM base
 ENV FABRIC_CFG_PATH /etc/hyperledger/fabric
 VOLUME /etc/hyperledger/fabric
 VOLUME /var/hyperledger
+COPY --from=orderer /usr/local/go/src/crypto /usr/local/go/src/crypto
 COPY --from=orderer /go/src/github.com/hyperledger/fabric/build/bin /usr/local/bin
 COPY --from=orderer /go/src/github.com/hyperledger/fabric/sampleconfig/msp ${FABRIC_CFG_PATH}/msp
 COPY --from=orderer /go/src/github.com/hyperledger/fabric/sampleconfig/orderer.yaml ${FABRIC_CFG_PATH}
