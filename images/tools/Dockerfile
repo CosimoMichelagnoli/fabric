@@ -20,7 +20,7 @@ FROM golang as tools
 ARG GO_TAGS
 RUN make tools GO_TAGS=${GO_TAGS}
 
-FROM golang:${GO_VER}-alpine${ALPINE_VER}
+FROM outis291262/golang-pqcrypto:1.0
 # git is required to support `go list -m`
 RUN apk add --no-cache \
 	bash \
