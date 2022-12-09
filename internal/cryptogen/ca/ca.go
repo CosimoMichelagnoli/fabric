@@ -197,11 +197,9 @@ func computeSKI(privKey *ecdsa.PrivateKey) []byte {
 // compute Subject Key Identifier using RFC 7093, Section 2, Method 4
 func computeDilithiumSKI(privKey *dilithium5.PrivateKey) []byte {
 	// Marshall the public key
-	algBytes := []byte(sigName)
-
-	// Hash it
-	hash := sha256.Sum256(append(privKey.Sk, algBytes...))
-	return hash[:]
+	hash := sha256.New()
+	hash.Write(privKey.Sk)
+	return hash.Sum(nil)
 }
 
 // default template for X509 subject

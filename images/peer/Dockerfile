@@ -45,8 +45,8 @@ VOLUME /var/hyperledger
 COPY --from=golang /usr/local/lib/* /usr/local/lib/
 COPY --from=peer /usr/local/go/src/crypto /usr/local/go/src/crypto
 COPY --from=peer /go/src/github.com/hyperledger/fabric/build/bin /usr/local/bin
-COPY --from=peer /go/src/github.com/hyperledger/fabric/sampleconfig/msp ${FABRIC_CFG_PATH}/msp
-COPY --from=peer /go/src/github.com/hyperledger/fabric/sampleconfig/core.yaml ${FABRIC_CFG_PATH}/core.yaml
+#COPY --from=peer /go/src/github.com/hyperledger/fabric/sampleconfig/msp ${FABRIC_CFG_PATH}/msp
+#COPY --from=peer /go/src/github.com/hyperledger/fabric/test-network/configtx/core.yaml ${FABRIC_CFG_PATH}/core.yaml
 COPY --from=peer /go/src/github.com/hyperledger/fabric/release/linux-amd64/builders/ccaas/bin/ /opt/hyperledger/ccaas_builder/bin/
-EXPOSE 7051
-CMD ["peer","node","start"]
+#EXPOSE 7051
+#CMD ["peer","node","start"]

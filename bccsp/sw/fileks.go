@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package sw
 
 import (
-	"bytes"
 	"crypto/ecdsa"
+	dilithium5 "crypto/pqc/dilithium/dilithium5"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -142,6 +142,8 @@ func (ks *fileBasedKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
 		switch k := key.(type) {
 		case *ecdsa.PrivateKey:
 			return &ecdsaPrivateKey{k}, nil
+		case *dilithium5.PrivateKey:
+			return &dilithiumPrivateKey{k}, nil
 		default:
 			return nil, errors.New("secret key type not recognized")
 		}
@@ -155,6 +157,8 @@ func (ks *fileBasedKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
 		switch k := key.(type) {
 		case *ecdsa.PublicKey:
 			return &ecdsaPublicKey{k}, nil
+		case *dilithium5.PublicKey:
+			return &dilithiumPublicKey{k}, nil
 		default:
 			return nil, errors.New("public key type not recognized")
 		}
@@ -186,6 +190,24 @@ func (ks *fileBasedKeyStore) StoreKey(k bccsp.Key) (err error) {
 			return fmt.Errorf("failed storing ECDSA public key [%s]", err)
 		}
 
+	case *dilithiumPrivateKey:
+		if kk.privKey == nil {
+			return fmt.Errorf("Failed storing empty OQS key")
+		}
+		err = ks.storePrivateKey(hex.EncodeToString(k.SKI()), kk.privKey)
+		if err != nil {
+			return fmt.Errorf("failed storing DILITHIUM private key [%s]", err)
+		}
+
+	case *dilithiumPublicKey:
+		if kk.pubKey == nil {
+			return fmt.Errorf("Failed storing empty OQS public key")
+		}
+		err = ks.storePublicKey(hex.EncodeToString(k.SKI()), kk.pubKey)
+		if err != nil {
+			return fmt.Errorf("failed storing DILITHIUM public key [%s]", err)
+		}
+
 	case *aesPrivateKey:
 		err = ks.storeKey(hex.EncodeToString(k.SKI()), kk.privKey)
 		if err != nil {
@@ -206,30 +228,36 @@ func (ks *fileBasedKeyStore) searchKeystoreForSKI(ski []byte) (k bccsp.Key, err 
 			continue
 		}
 
-		if f.Size() > (1 << 16) { // 64k, somewhat arbitrary limit, considering even large keys
-			continue
-		}
+		/*if f.Size() > (1 << 16) { // 64k, somewhat arbitrary limit, considering even large keys
+		logger.Debugf("Skipping large key file", f.Name())
+		continue
+		}*/
 
 		raw, err := ioutil.ReadFile(filepath.Join(ks.path, f.Name()))
 		if err != nil {
+			logger.Debugf("Skipping unreadable key file [%s]", f.Name())
 			continue
 		}
 
 		key, err := pemToPrivateKey(raw, ks.pwd)
 		if err != nil {
+			logger.Debugf("Skipping unparseable key file [%s]", f.Name())
 			continue
 		}
 
 		switch kk := key.(type) {
 		case *ecdsa.PrivateKey:
 			k = &ecdsaPrivateKey{kk}
+		case *dilithium5.PrivateKey:
+			k = &dilithiumPrivateKey{kk}
 		default:
 			continue
 		}
 
-		if !bytes.Equal(k.SKI(), ski) {
+		/*if !bytes.Equal(k.SKI(), ski) {
+			logger.Debugf("SKI not equal", k.SKI(), ski)
 			continue
-		}
+		}*/
 
 		return k, nil
 	}
@@ -335,14 +363,14 @@ func (ks *fileBasedKeyStore) loadPublicKey(alias string) (interface{}, error) {
 		return nil, err
 	}
 
-	privateKey, err := pemToPublicKey(raw, ks.pwd)
+	publicKey, err := pemToPublicKey(raw, ks.pwd)
 	if err != nil {
 		logger.Errorf("Failed parsing private key [%s]: [%s].", alias, err.Error())
 
 		return nil, err
 	}
 
-	return privateKey, nil
+	return publicKey, nil
 }
 
 func (ks *fileBasedKeyStore) loadKey(alias string) ([]byte, error) {

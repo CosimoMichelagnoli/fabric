@@ -224,7 +224,7 @@ Orderer: &OrdererDefaults
     BatchSize:
 
         # Max Message Count: The maximum number of messages to permit in a batch
-        MaxMessageCount: 100
+        MaxMessageCount: 10
 
         # Absolute Max Bytes: The absolute maximum number of bytes allowed for
         # the serialized messages in a batch.
@@ -233,7 +233,7 @@ Orderer: &OrdererDefaults
         # Preferred Max Bytes: The preferred maximum number of bytes allowed for
         # the serialized messages in a batch. A message larger than the preferred
         # max bytes will result in a batch larger than preferred max bytes.
-        PreferredMaxBytes: 5120 KB
+        PreferredMaxBytes: 512 KB
 
     # Organizations is the list of orgs which are defined as participants on
     # the orderer side of the network

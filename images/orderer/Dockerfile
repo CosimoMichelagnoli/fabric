@@ -45,8 +45,7 @@ ENV LD_LIBRARY_PATH /usr/local/lib
 COPY --from=orderer /usr/local/lib /usr/local/lib
 COPY --from=orderer /usr/local/go/src/crypto /usr/local/go/src/crypto
 COPY --from=orderer /go/src/github.com/hyperledger/fabric/build/bin /usr/local/bin
-COPY --from=orderer /go/src/github.com/hyperledger/fabric/sampleconfig/msp ${FABRIC_CFG_PATH}/msp
-COPY --from=orderer /go/src/github.com/hyperledger/fabric/sampleconfig/orderer.yaml ${FABRIC_CFG_PATH}
-COPY --from=orderer /go/src/github.com/hyperledger/fabric/sampleconfig/configtx.yaml ${FABRIC_CFG_PATH}
-EXPOSE 7050
-CMD ["orderer"]
+COPY --from=orderer /go/src/github.com/hyperledger/fabric/config/orderer.yaml ${FABRIC_CFG_PATH}/orderer.yaml
+COPY --from=orderer /go/src/github.com/hyperledger/fabric/config/configtx.yaml ${FABRIC_CFG_PATH}/configtx.yaml
+#EXPOSE 7050
+#CMD ["orderer"]

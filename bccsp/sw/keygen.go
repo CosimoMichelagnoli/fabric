@@ -59,7 +59,7 @@ type dilithiumKeyGenerator struct {
 func (kg *dilithiumKeyGenerator) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error) {
 	privKey, err := dilithium5.GenerateKey()
 	if err != nil {
-		return nil, fmt.Errorf("Failed generating ECDSA key for [%v]: [%s]", kg.curve, err)
+		return nil, fmt.Errorf("Failed generating DILITHIUM key: [%s]", err)
 	}
 
 	return &dilithiumPrivateKey{privKey}, nil

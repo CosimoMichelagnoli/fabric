@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# imports  
+# imports
 . scripts/envVar.sh
 . scripts/utils.sh
 
@@ -74,7 +74,7 @@ joinChannel() {
 
 setAnchorPeer() {
   ORG=$1
-  ${CONTAINER_CLI} exec cli ./scripts/setAnchorPeer.sh $ORG $CHANNEL_NAME 
+  ${CONTAINER_CLI} exec cli ./scripts/setAnchorPeer.sh $ORG $CHANNEL_NAME
 }
 
 FABRIC_CFG_PATH=${PWD}/configtx
