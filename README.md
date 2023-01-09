@@ -26,8 +26,6 @@ fabric/
 ├── bccsp
 │   ├── dilithiumopts.go
 │   ├── opts.go
-│   ├── signer
-│   │   └── signer.go
 │   └── sw
 │       ├── dilithium.go
 │       ├── dilithiumkey.go
@@ -61,7 +59,6 @@ fabric/
 │           └── msp.go
 ├── msp
 │   ├── identities.go
-│   ├── mspimpl.go
 │   └── mspimplsetup.go
 └── test-network
     ├── CHAINCODE_AS_A_SERVICE_TUTORIAL.md
@@ -110,3 +107,40 @@ fabric/
     │   └── utils.sh
     └── setOrgEnv.sh
 ``` 
+### bccsp
+BCCSP is the Blockchain Cryptographic Service Provider that offers the implementation of cryptographic standards and algorithms.
+
+Within the ```opts.go``` file and in the newly added ```dilithiumopts.go``` file I define the structs: 
++ DILITHIUMGoPublicKeyImportOpts
++ DILITHIUMKeyGenOpts
+
+#### bccsp/sw
+```dilithium.go``` and ```dilithiumkey.go``` files have been added within this section. 
+```dilithium.go``` defines the struct **dilithiumSigner** with the **Sign()** medoto and the struct **dilithiumVerifier** with **Verify()**. 
+Both of these methods invoke the respective methods defined in ```dilithiumkey.go```. Here, in fact, the structs **dilithiumPrivateKey** and **dilithiumPublicKey** are defined. These structs implement the **BCCSP.key** interface, which is how a cryptographic key is represented in fabric.
+
+In the ```keygen.go``` file the struct **dilithiumKeyGenerator** is defined, which in the KeyGen() method uses liboqs to generate a dilithium key pair and returns the struct **dilithiumPrivateKey** with the newly generated private key.
+
+Within the struct **x509PublicKeyImportOptsKeyImporter** defined in the ```keyimport.go``` file, the case *dilithium5.PublicKey was added. So as to call the keyimport() method defined in the new struct **dilithiumGoPublicKeyImportOptsKeyImporter** which will return the struct **dilithiumPublicKey**
+
+The file ```new.go``` was modified. 
+The following line were added:
+```golang
+// Set the Signers
+swbccsp.AddWrapper(reflect.TypeOf(&dilithiumPrivateKey{}), &dilithiumSigner{})
+
+// Set the Verifiers
+swbccsp.AddWrapper(reflect.TypeOf(&dilithiumPublicKey{}), &dilithiumPublicKeyKeyVerifier{})
+
+// Set the key generators
+swbccsp.AddWrapper(reflect.TypeOf(&bccsp.DILITHIUMKeyGenOpts{}), &dilithiumKeyGenerator{})
+
+// Set the key importers
+swbccsp.AddWrapper(reflect.TypeOf(&bccsp.DILITHIUMGoPublicKeyImportOpts{}), &dilithiumGoPublicKeyImportOptsKeyImporter{})
+```
+### internal/cryptogen
+Regarding the cryptogen binary, ECDSA-specific functions were replenished so that they would work with the newly introduced structs and generate keys with the dilithium algorithm. 
+
+### msp
+minor adjustments.
+
