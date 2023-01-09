@@ -142,5 +142,19 @@ swbccsp.AddWrapper(reflect.TypeOf(&bccsp.DILITHIUMGoPublicKeyImportOpts{}), &dil
 Regarding the cryptogen binary, ECDSA-specific functions were replenished so that they would work with the newly introduced structs and generate keys with the dilithium algorithm. 
 
 ### msp
-minor adjustments.
+Minor adjustments.
+
+## Environment Setup
+
+1. OS: ubuntu 18.04 +.
+2. GoLang: Please make sure you have installed go 1.17.6 and/or above.
+3. liboqs and liboqs-go: Please follow the project instructions of [liboqs](https://github.com/open-quantum-safe/liboqs) and [liboqs-go](https://github.com/open-quantum-safe/liboqs-go)  and configure the corresponding environment variable, both of them must be configured correctly.
+
+### 2.2 Clone the Project
+
+```
+git clone https://github.com/buyobuyo404/PQCrypto.git
+```
+
+Then delete `crypto` folder, put `PQCrypto` into `$GOROOT/src/` folder, and rename `PQCrypto` to `crypto`.
 
