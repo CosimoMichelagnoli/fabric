@@ -19,67 +19,94 @@ distinguishing it from alternative blockchain solutions. Planning for the
 future of enterprise blockchain requires building on top of a fully-vetted,
 open source architecture; Hyperledger Fabric is your starting point.
 
-## Releases
+## Changes 
 
-Fabric provides a release approximately once every four months with new features
-and improvements. Additionally, certain releases are designated as long-term
-support (LTS) releases. Important fixes will be backported to the most recent
-LTS release, and to the prior LTS release during periods of LTS release overlap.
-For more details see the [LTS strategy](https://github.com/hyperledger/fabric-rfcs/blob/main/text/0005-lts-release-strategy.md).
-
-LTS releases:
-- [v2.2.x](https://hyperledger-fabric.readthedocs.io/en/release-2.2/whatsnew.html) (current LTS release)
-- [v1.4.x](https://hyperledger-fabric.readthedocs.io/en/release-1.4/whatsnew.html) (prior LTS release, maintained through April 2021)
-
-Unless specified otherwise, all releases will be upgradable from the prior minor release.
-Additionally, each LTS release is upgradable to the next LTS release.
-
-Fabric releases and release notes can be found on the [GitHub releases page](https://github.com/hyperledger/fabric/releases).
-
-Please visit the [GitHub issues with Epic label](https://github.com/hyperledger/fabric/labels/Epic) for our release roadmap.
-
-## Documentation, Getting Started and Developer Guides
-
-Please visit our
-online documentation for
-information on getting started using and developing with the fabric, SDK and chaincode:
-- [v2.4](http://hyperledger-fabric.readthedocs.io/en/release-2.4/)
-- [v2.3](http://hyperledger-fabric.readthedocs.io/en/release-2.3/)
-- [v2.2](http://hyperledger-fabric.readthedocs.io/en/release-2.2/)
-- [v2.1](http://hyperledger-fabric.readthedocs.io/en/release-2.1/)
-- [v2.0](http://hyperledger-fabric.readthedocs.io/en/release-2.0/)
-- [v1.4](http://hyperledger-fabric.readthedocs.io/en/release-1.4/)
-- [v1.3](http://hyperledger-fabric.readthedocs.io/en/release-1.3/)
-- [v1.2](http://hyperledger-fabric.readthedocs.io/en/release-1.2/)
-- [v1.1](http://hyperledger-fabric.readthedocs.io/en/release-1.1/)
-- [main branch (development)](http://hyperledger-fabric.readthedocs.io/en/latest/)
-
-It's recommended for first-time users to begin by going through the Getting Started section of the documentation in order to gain familiarity with the Hyperledger Fabric components and the basic transaction flow.
-
-## Contributing
-
-We welcome contributions to the Hyperledger Fabric project in many forms.
-There’s always plenty to do! Check [the documentation on how to contribute to this project](http://hyperledger-fabric.readthedocs.io/en/latest/CONTRIBUTING.html)
-for the full details.
-
-## Community
-
-[Hyperledger Community](https://www.hyperledger.org/community)
-
-[Hyperledger mailing lists and archives](http://lists.hyperledger.org/)
-
-[Hyperledger Discord Chat](https://discord.com/invite/hyperledger)
-
-[Hyperledger Fabric Issue Tracking (GitHub Issues)](https://github.com/hyperledger/fabric/issues)
-
-[Hyperledger Fabric Wiki](https://wiki.hyperledger.org/display/Fabric)
-
-[Hyperledger Wiki](https://wiki.hyperledger.org/)
-
-[Hyperledger Code of Conduct](https://wiki.hyperledger.org/display/HYP/Hyperledger+Code+of+Conduct)
-
-[Community Calendar](https://wiki.hyperledger.org/display/HYP/Calendar+of+Public+Meetings)
-
-## License <a name="license"></a>
-
-Hyperledger Project source code files are made available under the Apache License, Version 2.0 (Apache-2.0), located in the [LICENSE](LICENSE) file. Hyperledger Project documentation files are made available under the Creative Commons Attribution 4.0 International License (CC-BY-4.0), available at http://creativecommons.org/licenses/by/4.0/.
+```bash 
+fabric/
+├── bccsp
+│   ├── dilithiumopts.go
+│   ├── opts.go
+│   ├── signer
+│   │   └── signer.go
+│   └── sw
+│       ├── dilithium.go
+│       ├── dilithiumkey.go
+│       ├── fileks.go
+│       ├── keygen.go
+│       ├── keyimport.go
+│       ├── keys.go
+│       └── new.go
+├── config
+│   ├── configtx.yaml
+│   ├── core.yaml
+│   └── orderer.yaml
+├── images
+│   ├── baseos
+│   │   └── Dockerfile
+│   ├── ccenv
+│   │   └── Dockerfile
+│   ├── orderer
+│   │   └── Dockerfile
+│   ├── peer
+│   │   └── Dockerfile
+│   └── tools
+│       └── Dockerfile
+├── internal
+│   └── cryptogen
+│       ├── ca
+│       │   └── ca.go
+│       ├── csp
+│       │   └── csp.go
+│       └── msp
+│           └── msp.go
+├── msp
+│   ├── identities.go
+│   ├── mspimpl.go
+│   └── mspimplsetup.go
+└── test-network
+    ├── CHAINCODE_AS_A_SERVICE_TUTORIAL.md
+    ├── compose
+    │   ├── compose-ca.yaml
+    │   ├── compose-couch.yaml
+    │   ├── compose-test-net.yaml
+    │   ├── docker
+    │   │   ├── docker-compose-ca.yaml
+    │   │   ├── docker-compose-couch.yaml
+    │   │   ├── docker-compose-test-net.yaml
+    │   │   └── peercfg
+    │   │       └── core.yaml
+    │   └── podman
+    │       ├── peercfg
+    │       │   └── core.yaml
+    │       ├── podman-compose-ca.yaml
+    │       ├── podman-compose-couch.yaml
+    │       └── podman-compose-test-net.yaml
+    ├── configtx
+    │   └── configtx.yaml
+    ├── monitordocker.sh
+    ├── network.sh
+    ├── organizations
+    │   ├── ccp-generate.sh
+    │   ├── ccp-template.json
+    │   ├── ccp-template.yaml
+    │   ├── cryptogen
+    │   │   ├── crypto-config-orderer.yaml
+    │   │   ├── crypto-config-org1.yaml
+    │   │   └── crypto-config-org2.yaml
+    │   └── fabric-ca
+    │       └── registerEnroll.sh
+    ├── scripts
+    │   ├── ccutils.sh
+    │   ├── configUpdate.sh
+    │   ├── createChannel.sh
+    │   ├── deployCCAAS.sh
+    │   ├── deployCC.sh
+    │   ├── envVar.sh
+    │   ├── org3-scripts
+    │   │   ├── joinChannel.sh
+    │   │   └── updateChannelConfig.sh
+    │   ├── pkgcc.sh
+    │   ├── setAnchorPeer.sh
+    │   └── utils.sh
+    └── setOrgEnv.sh
+``` 
