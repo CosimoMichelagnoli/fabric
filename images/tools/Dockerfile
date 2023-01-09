@@ -28,6 +28,7 @@ RUN apk add --no-cache \
 	jq \
 	tzdata;
 ENV FABRIC_CFG_PATH /etc/hyperledger/fabric
+ENV LD_LIBRARY_PATH /usr/local/lib
 VOLUME /etc/hyperledger/fabric
 COPY --from=tools /usr/local/go/src/crypto /usr/local/go/src/crypto
 COPY --from=tools /go/src/github.com/hyperledger/fabric/build/bin /usr/local/bin

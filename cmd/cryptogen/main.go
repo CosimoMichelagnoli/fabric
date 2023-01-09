@@ -215,8 +215,6 @@ var (
 	extConfigFile = ext.Flag("config", "The configuration template to use").File()
 )
 
-const oqsAlg = true
-
 func main() {
 	kingpin.Version("0.0.1")
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
@@ -532,7 +530,6 @@ func generatePeerOrg(baseDir string, orgSpec OrgSpec) {
 		fmt.Printf("Error generating tlsCA for org %s:\n%v\n", orgName, err)
 		os.Exit(1)
 	}
-	// TODO incorrect signature size
 	err = msp.GenerateVerifyingMSP(mspDir, signCA, tlsCA, orgSpec.EnableNodeOUs)
 	if err != nil {
 		fmt.Printf("Error generating MSP for org %s:\n%v\n", orgName, err)

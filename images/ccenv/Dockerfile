@@ -13,6 +13,7 @@ ARG ALPINE_VER
 #	make \
 #	musl-dev
 FROM outis291262/golang-pqcrypto:1.0 as golang
+ENV LD_LIBRARY_PATH /usr/local/lib
 
 RUN mkdir -p /chaincode/output /chaincode/input
 RUN addgroup -g 500 chaincode && adduser -u 500 -D -h /home/chaincode -G chaincode chaincode
