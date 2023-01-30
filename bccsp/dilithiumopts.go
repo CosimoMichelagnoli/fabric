@@ -16,7 +16,7 @@ limitations under the License.
 
 package bccsp
 
-// DILITHIUMKeyGenOpts contains options for ECDSA key generation with curve P-256.
+// DILITHIUMKeyGenOpts contains options for DILITHIUM key generation.
 type DILITHIUMKeyGenOpts struct {
 	Temporary bool
 }
