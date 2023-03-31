@@ -69,7 +69,8 @@ func GenerateLocalMSP(
 	keystore := filepath.Join(mspDir, "keystore")
 
 	// generate private key
-	priv, err := csp.GenerateDilithiumPrivateKey(keystore)
+	priv, err := csp.GenerateDilithiumPrivateKey(keystore) //Dilithium
+	//priv, err := csp.GenerateFalconPrivateKey(keystore) //Falcon
 	if err != nil {
 		return err
 	}
@@ -135,7 +136,8 @@ func GenerateLocalMSP(
 	*/
 
 	// generate private key
-	tlsPrivKey, err := csp.GenerateDilithiumPrivateKey(tlsDir)
+	tlsPrivKey, err := csp.GenerateDilithiumPrivateKey(tlsDir) //Dilithium
+	//tlsPrivKey, err := csp.GenerateFalconPrivateKey(tlsDir) //Falcon
 	if err != nil {
 		return err
 	}
@@ -229,7 +231,8 @@ func GenerateVerifyingMSP(
 	if err != nil {
 		return errors.WithMessage(err, "failed to create keystore directory")
 	}
-	priv, err := csp.GenerateDilithiumPrivateKey(ksDir)
+	priv, err := csp.GenerateDilithiumPrivateKey(ksDir) //Dilithium
+	//priv, err := csp.GenerateFalconPrivateKey(ksDir) //Falcon
 	if err != nil {
 		return err
 	}

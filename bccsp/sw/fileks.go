@@ -9,6 +9,7 @@ package sw
 import (
 	"crypto/ecdsa"
 	dilithium5 "crypto/pqc/dilithium/dilithium5"
+	falcon1024 "crypto/pqc/falcon/falcon1024"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -144,6 +145,8 @@ func (ks *fileBasedKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
 			return &ecdsaPrivateKey{k}, nil
 		case *dilithium5.PrivateKey:
 			return &dilithiumPrivateKey{k}, nil
+		case *falcon1024.PrivateKey:
+			return &falconPrivateKey{k}, nil
 		default:
 			return nil, errors.New("secret key type not recognized")
 		}
@@ -159,6 +162,8 @@ func (ks *fileBasedKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
 			return &ecdsaPublicKey{k}, nil
 		case *dilithium5.PublicKey:
 			return &dilithiumPublicKey{k}, nil
+		case *falcon1024.PublicKey:
+			return &falconPublicKey{k}, nil
 		default:
 			return nil, errors.New("public key type not recognized")
 		}
@@ -250,6 +255,8 @@ func (ks *fileBasedKeyStore) searchKeystoreForSKI(ski []byte) (k bccsp.Key, err 
 			k = &ecdsaPrivateKey{kk}
 		case *dilithium5.PrivateKey:
 			k = &dilithiumPrivateKey{kk}
+		case *falcon1024.PrivateKey:
+			k = &falconPrivateKey{kk}
 		default:
 			continue
 		}

@@ -20,6 +20,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	dilithium5 "crypto/pqc/dilithium/dilithium5"
+	falcon1024 "crypto/pqc/falcon/falcon1024"
 	"crypto/rand"
 	"fmt"
 
@@ -63,4 +64,17 @@ func (kg *dilithiumKeyGenerator) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error
 	}
 
 	return &dilithiumPrivateKey{privKey}, nil
+}
+
+type falconKeyGenerator struct {
+	curve elliptic.Curve
+}
+
+func (kg *falconKeyGenerator) KeyGen(opts bccsp.KeyGenOpts) (bccsp.Key, error) {
+	privKey, err := falcon1024.GenerateKey()
+	if err != nil {
+		return nil, fmt.Errorf("Failed generating FALCON key: [%s]", err)
+	}
+
+	return &falconPrivateKey{privKey}, nil
 }

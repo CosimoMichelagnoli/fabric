@@ -9,7 +9,8 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/pqc/dilithium/dilithium5"
+	dilithium5 "crypto/pqc/dilithium/dilithium5"
+	falcon1024 "crypto/pqc/falcon/falcon1024"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
@@ -31,12 +32,6 @@ import (
 var (
 	oidOqsSignature        = asn1.ObjectIdentifier{1, 2, 3, 4}
 	oidPublicKeydilithium5 = asn1.ObjectIdentifier{1, 5, 1, 2}
-)
-
-const (
-	sigName        = "dilithium5"
-	PublicKeySize  = 2592
-	PrivateKeySize = 4864
 )
 
 type pkixPublicKey struct {
@@ -76,7 +71,8 @@ func NewCA(
 		return nil, err
 	}
 
-	priv, err := csp.GenerateDilithiumPrivateKey(baseDir)
+	priv, err := csp.GenerateDilithiumPrivateKey(baseDir) //Dilithium
+	//priv, err := csp.GenerateFalconPrivateKey(baseDir) //Falcon
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +94,8 @@ func NewCA(
 	subject.CommonName = name
 
 	template.Subject = subject
-	template.SubjectKeyId = computeDilithiumSKI(priv)
+	template.SubjectKeyId = computeDilithiumSKI(priv) //Dilithium
+	//template.SubjectKeyId = computeFalconSKI(priv) //Falcon
 
 	x509Cert, err := genCertificateDILITHIUM(baseDir,
 		name,
@@ -106,7 +103,18 @@ func NewCA(
 		&template,
 		&priv.PublicKey,
 		priv,
-	)
+	) //Dilithium
+
+	/*
+		x509Cert, err := genCertificateFALCON(baseDir,
+			name,
+			&template,
+			&template,
+			&priv.PublicKey,
+			priv,
+			) //Falcon
+	*/
+
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +133,23 @@ func NewCA(
 		OrganizationalUnit: orgUnit,
 		StreetAddress:      streetAddress,
 		PostalCode:         postalCode,
-	}
+	} //Dilithium
+
+	/*
+		ca = &CA{
+			Name: name,
+			Signer: &csp.FALCONSigner{
+				PrivateKey: priv,
+			},
+			SignCert:           x509Cert,
+			Country:            country,
+			Province:           province,
+			Locality:           locality,
+			OrganizationalUnit: orgUnit,
+			StreetAddress:      streetAddress,
+			PostalCode:         postalCode,
+			} //Falcon
+	*/
 
 	return ca, err
 }
@@ -137,7 +161,8 @@ func (ca *CA) SignCertificate(
 	name string,
 	orgUnits,
 	alternateNames []string,
-	pub *dilithium5.PublicKey,
+	pub *dilithium5.PublicKey, //Dilithium
+	//pub *falcon1024.PublicKey, //Falcon
 	ku x509.KeyUsage,
 	eku []x509.ExtKeyUsage,
 ) (*x509.Certificate, error) {
@@ -176,7 +201,18 @@ func (ca *CA) SignCertificate(
 		ca.SignCert,
 		pub,
 		ca.Signer,
-	)
+		) //Dilithium
+	/*
+	cert, err := genCertificateFALCON(
+		baseDir,
+		name,
+		&template,
+		ca.SignCert,
+		pub,
+		ca.Signer,
+		) //Falcon
+	*/
+
 	if err != nil {
 		return nil, err
 	}
@@ -196,6 +232,14 @@ func computeSKI(privKey *ecdsa.PrivateKey) []byte {
 
 // compute Subject Key Identifier using RFC 7093, Section 2, Method 4
 func computeDilithiumSKI(privKey *dilithium5.PrivateKey) []byte {
+	// Marshall the public key
+	hash := sha256.New()
+	hash.Write(privKey.Sk)
+	return hash.Sum(nil)
+}
+
+// compute Subject Key Identifier using RFC 7093, Section 2, Method 4
+func computeFalconSKI(privKey *falcon1024.PrivateKey) []byte {
 	// Marshall the public key
 	hash := sha256.New()
 	hash.Write(privKey.Sk)
@@ -299,13 +343,48 @@ func genCertificateECDSA(
 	return x509Cert, nil
 }
 
-// generate a signed X509 certificate using ECDSA
+// generate a signed X509 certificate using DILITHIUM
 func genCertificateDILITHIUM(
 	baseDir,
 	name string,
 	template,
 	parent *x509.Certificate,
 	pub *dilithium5.PublicKey,
+	priv interface{},
+) (*x509.Certificate, error) {
+	// create the x509 public cert
+	certBytes, err := x509.CreateCertificate(rand.Reader, template, parent, pub, priv)
+	if err != nil {
+		return nil, err
+	}
+
+	// write cert out to file
+	fileName := filepath.Join(baseDir, name+"-cert.pem")
+	certFile, err := os.Create(fileName)
+	if err != nil {
+		return nil, err
+	}
+	// pem encode the cert
+	err = pem.Encode(certFile, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
+	certFile.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	x509Cert, err := x509.ParseCertificate(certBytes)
+	if err != nil {
+		return nil, err
+	}
+	return x509Cert, nil
+}
+
+// generate a signed X509 certificate using FALCON
+func genCertificateFALCON(
+	baseDir,
+	name string,
+	template,
+	parent *x509.Certificate,
+	pub *falcon1024.PublicKey,
 	priv interface{},
 ) (*x509.Certificate, error) {
 	// create the x509 public cert

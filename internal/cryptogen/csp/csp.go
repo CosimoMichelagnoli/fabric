@@ -10,6 +10,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	dilithium5 "crypto/pqc/dilithium/dilithium5"
+	falcon1024 "crypto/pqc/falcon/falcon1024"
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/asn1"
@@ -102,7 +103,31 @@ func GeneratePrivateKey(keystorePath string) (*ecdsa.PrivateKey, error) {
 func GenerateDilithiumPrivateKey(keystorePath string) (*dilithium5.PrivateKey, error) {
 	priv, err := dilithium5.GenerateKey()
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to generate quantum-safe private key")
+		return nil, errors.WithMessage(err, "failed to generate Dilithium private key")
+	}
+
+	pkcs8Encoded, err := x509.MarshalPKCS8PrivateKey(priv)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to marshal private key")
+	}
+
+	pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: pkcs8Encoded})
+
+	keyFile := filepath.Join(keystorePath, "priv_sk")
+	err = ioutil.WriteFile(keyFile, pemEncoded, 0o600)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to save private key to file %s", keyFile)
+	}
+
+	return priv, err
+}
+
+// GenerateOqsPrivateKey creates a quantum-safe private key using Falcon and stores
+// it in keystorePath.
+func GenerateFalconPrivateKey(keystorePath string) (*falcon1024.PrivateKey, error) {
+	priv, err := falcon1024.GenerateKey()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to generate Falcon private key")
 	}
 
 	pkcs8Encoded, err := x509.MarshalPKCS8PrivateKey(priv)
@@ -169,6 +194,26 @@ func (d *DILITHIUMSigner) Public() crypto.PublicKey {
 
 // Sign signs the digest.
 func (d *DILITHIUMSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) ([]byte, error) {
+	sig, err := d.PrivateKey.SignPQC(digest)
+	if err != nil {
+		return nil, err
+	}
+
+	// return marshaled signature
+	return sig, err
+}
+
+type FALCONSigner struct {
+	PrivateKey *falcon1024.PrivateKey
+}
+
+// Public returns the dilithium.PublicKey associated with PrivateKey.
+func (d *FALCONSigner) Public() crypto.PublicKey {
+	return &d.PrivateKey.PublicKey
+}
+
+// Sign signs the digest.
+func (d *FALCONSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) ([]byte, error) {
 	sig, err := d.PrivateKey.SignPQC(digest)
 	if err != nil {
 		return nil, err

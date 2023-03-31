@@ -10,6 +10,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/pqc/dilithium/dilithium5"
+	"crypto/pqc/falcon/falcon1024"
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/asn1"
@@ -163,6 +164,8 @@ func derToPrivateKey(der []byte) (key interface{}, err error) {
 			return
 		case *dilithium5.PrivateKey:
 			return
+		case *falcon1024.PrivateKey:
+			return
 		default:
 			return nil, errors.New("found unknown private key type in PKCS#8 wrapping")
 		}
@@ -297,8 +300,24 @@ func publicKeyToPEM(publicKey interface{}, pwd []byte) ([]byte, error) {
 			},
 		), nil
 
+	case *falcon1024.PublicKey:
+		if k == nil {
+			return nil, errors.New("invalid dilithium public key. It must be different from nil")
+		}
+		PubASN1, err := x509.MarshalPKIXPublicKey(k)
+		if err != nil {
+			return nil, err
+		}
+
+		return pem.EncodeToMemory(
+			&pem.Block{
+				Type:  "PUBLIC KEY",
+				Bytes: PubASN1,
+			},
+		), nil
+
 	default:
-		return nil, errors.New("invalid key type. It must be *ecdsa.PublicKey or *dilithium5.PublicKey")
+		return nil, errors.New("invalid key type. It must be *ecdsa.PublicKey, *dilithium5.PublicKey or *falcon1024.PublicKey")
 	}
 }
 

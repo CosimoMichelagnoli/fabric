@@ -16,11 +16,11 @@ import (
 	"github.com/hyperledger/fabric/bccsp"
 )
 
-const (
+/*var (
 	sigName        = "dilithium5"
 	PublicKeySize  = 2592
 	PrivateKeySize = 4864
-)
+)*/
 
 // dilithiumPrivateKey implements a bccsp.Key interface
 type dilithiumPrivateKey struct {
